@@ -1,7 +1,7 @@
 {
   "name": "@sgnl-actions/generic-webhook",
   "version": "1.0.0",
-  "description": "Generic webhook action for SGNL Job Service",
+  "description": "Generic webhook action for SGNL CAEP Hub",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {

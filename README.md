@@ -8,7 +8,7 @@ The Generic Webhook action provides a versatile way to make HTTP requests with c
 
 ## Prerequisites
 
-- SGNL Job Service with Node.js 22 runtime
+- SGNL's CAEP Hub with Node.js 22 runtime
 - Network access to target endpoints
 - Optional: Authentication credentials for secured endpoints
 
@@ -130,7 +130,7 @@ The action distinguishes between retryable and fatal errors:
    - JSON bodies are automatically detected and Content-Type is set
    - For non-JSON content, set Content-Type explicitly in requestHeaders
 
-4. **Network Access**: Ensure the SGNL Job Service has network access to target endpoints
+4. **Network Access**: Ensure the SGNL's CAEP Hub has network access to target endpoints
 
 ## Development
 
@@ -174,7 +174,7 @@ npm run lint:fix
    - Verify requestHeaders is valid JSON if provided as string
    
 3. **Network Errors**
-   - Check network connectivity from SGNL Job Service
+   - Check network connectivity from SGNL's CAEP Hub
    - Verify firewall rules allow outbound connections
    
 4. **Authentication Failures**
@@ -195,4 +195,3 @@ The action returns detailed information in the response:
 
 ## Support
 
-For issues or questions, please contact SGNL support or refer to the [SGNL Job Service documentation](https://github.com/SGNL-ai/job_service).
