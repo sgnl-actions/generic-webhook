@@ -1,48 +1,65 @@
-name: job-template
-description: Template for SGNL JavaScript jobs - replace with your job description
+name: generic-webhook
+description: Generic webhook action for making custom HTTP requests
 
 # Input parameters for web form generation
 inputs:
-  target:
+  method:
     type: text
-    description: Target resource identifier (e.g., user email, group ID)
+    description: HTTP method (GET, POST, PUT, DELETE, PATCH, etc.)
     required: true
     validation:
-      min: 1
-      max: 100
+      pattern: '^(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)$'
 
-  action:
+  address:
     type: text
-    description: Action to perform on the target resource
-    required: true
-    validation:
-      min: 1
-      max: 50
-
-  options:
-    type: array
-    description: Additional options for the operation
+    description: Full URL to send the request to (overrides integration address)
     required: false
-    item_type: text
+    validation:
+      max: 2000
+
+  addressSuffix:
+    type: text
+    description: Path suffix to append to the base address
+    required: false
+    validation:
+      max: 1000
+
+  requestBody:
+    type: text
+    description: JSON request body to send
+    required: false
+    validation:
+      max: 10000
+
+  requestHeaders:
+    type: text
+    description: JSON object of custom headers to include
+    required: false
+    validation:
+      max: 5000
+
+  acceptedStatusCodes:
+    type: array
+    description: Additional status codes to treat as success (e.g., [404])
+    required: false
+    item_type: number
     validation:
       max: 10
 
-  dry_run:
-    type: boolean
-    description: Preview changes without executing them
-    required: false
-    default: false
-
 # Expected output structure
 outputs:
-  status:
-    type: text
-    description: Operation result (success, failed, recovered, etc.)
+  statusCode:
+    type: number
+    description: HTTP status code from the response
 
-  target:
+  body:
     type: text
-    description: The target resource that was processed
+    description: Response body content
 
-  processed_at:
+  success:
+    type: boolean
+    description: Whether the request was successful
+
+  executedAt:
     type: datetime
-    description: When the operation completed (ISO 8601)
+    description: When the request was executed (ISO 8601)

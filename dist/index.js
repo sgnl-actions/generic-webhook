@@ -2,103 +2,212 @@
 'use strict';
 
 /**
- * SGNL Job Template
+ * Generic Webhook Action
  *
- * This template provides a starting point for implementing SGNL jobs.
- * Replace this implementation with your specific business logic.
+ * Makes custom HTTP requests to any endpoint with flexible configuration.
+ * Supports all standard HTTP methods and custom headers/body.
  */
+
+/**
+ * Helper function to make HTTP request
+ * @param {string} method - HTTP method
+ * @param {string} url - Full URL to send request to
+ * @param {Object} headers - Headers to include
+ * @param {string} body - Request body (for methods that support it)
+ * @param {number[]} acceptedStatusCodes - Additional status codes to treat as success
+ * @returns {Promise<Object>} Response object with statusCode, body, and success flag
+ */
+async function makeWebhookRequest(method, url, headers, body, acceptedStatusCodes = []) {
+  const options = {
+    method: method.toUpperCase(),
+    headers: headers || {}
+  };
+
+  // Only add body for methods that support it
+  const methodsWithBody = ['POST', 'PUT', 'PATCH', 'DELETE'];
+  if (methodsWithBody.includes(options.method) && body) {
+    options.body = body;
+    // Set Content-Type if not already set and we have a body
+    if (!options.headers['Content-Type'] && !options.headers['content-type']) {
+      options.headers['Content-Type'] = 'application/json';
+    }
+  }
+
+  const response = await fetch(url, options);
+
+  // Read response body
+  let responseBody = '';
+  try {
+    responseBody = await response.text();
+  } catch {
+    // If we can't read the body, that's okay
+    responseBody = '';
+  }
+
+  // Determine if request was successful
+  // Success = 2xx status OR status is in acceptedStatusCodes array
+  const isSuccess = (response.status >= 200 && response.status < 300) ||
+                    (acceptedStatusCodes && acceptedStatusCodes.includes(response.status));
+
+  return {
+    statusCode: response.status,
+    body: responseBody,
+    success: isSuccess
+  };
+}
 
 var script = {
   /**
-   * Main execution handler - implement your job logic here
-   * @param {Object} params - Job input parameters
-   * @param {Object} context - Execution context with env, secrets, outputs
-   * @returns {Object} Job results
+   * Main execution handler
+   * @param {Object} params - Input parameters
+   * @param {Object} context - Execution context with secrets and environment
+   * @returns {Promise<Object>} Action result
    */
   invoke: async (params, context) => {
-    console.log('Starting job execution');
-    console.log(`Processing target: ${params.target}`);
-    console.log(`Action: ${params.action}`);
-
-    // TODO: Replace with your implementation
-    const { target, action, options = [], dry_run = false } = params;
-
-    if (dry_run) {
-      console.log('DRY RUN: No changes will be made');
+    // Validate required parameters
+    if (!params.method) {
+      throw new Error('method is required');
     }
 
-    // Access environment variables
-    const environment = context.env.ENVIRONMENT || 'development';
-    console.log(`Running in ${environment} environment`);
-
-    // Access secrets securely (example)
-    if (context.secrets.API_KEY) {
-      console.log(`Using API key ending in ...${context.secrets.API_KEY.slice(-4)}`);
+    // Determine the URL to use
+    let url;
+    if (params.address) {
+      // If full address is provided, use it directly
+      url = params.address;
+      // Append suffix if provided
+      if (params.addressSuffix) {
+        // Handle trailing/leading slashes to avoid double slashes
+        if (url.endsWith('/') && params.addressSuffix.startsWith('/')) {
+          url = url + params.addressSuffix.substring(1);
+        } else if (!url.endsWith('/') && !params.addressSuffix.startsWith('/')) {
+          url = url + '/' + params.addressSuffix;
+        } else {
+          url = url + params.addressSuffix;
+        }
+      }
+    } else if (context.environment && context.environment.BASE_URL) {
+      // Use base URL from environment
+      url = context.environment.BASE_URL;
+      if (params.addressSuffix) {
+        // Handle trailing/leading slashes to avoid double slashes
+        if (url.endsWith('/') && params.addressSuffix.startsWith('/')) {
+          url = url + params.addressSuffix.substring(1);
+        } else if (!url.endsWith('/') && !params.addressSuffix.startsWith('/')) {
+          url = url + '/' + params.addressSuffix;
+        } else {
+          url = url + params.addressSuffix;
+        }
+      }
+    } else if (params.addressSuffix) {
+      throw new Error('addressSuffix provided but no base address available. Provide either address parameter or BASE_URL environment variable');
+    } else {
+      throw new Error('No URL specified. Provide either address parameter or BASE_URL environment variable');
     }
 
-    // Use outputs from previous jobs in workflow
-    if (context.outputs && Object.keys(context.outputs).length > 0) {
-      console.log(`Available outputs from ${Object.keys(context.outputs).length} previous jobs`);
-      console.log(`Previous job outputs: ${Object.keys(context.outputs).join(', ')}`);
+    // Parse request headers if provided as JSON string
+    let headers = {};
+    if (params.requestHeaders) {
+      try {
+        if (typeof params.requestHeaders === 'string') {
+          headers = JSON.parse(params.requestHeaders);
+        } else if (typeof params.requestHeaders === 'object') {
+          headers = params.requestHeaders;
+        }
+      } catch (e) {
+        throw new Error(`Failed to parse requestHeaders: ${e.message}`);
+      }
     }
 
-    // TODO: Implement your business logic here
-    console.log(`Performing ${action} on ${target}...`);
-
-    if (options.length > 0) {
-      console.log(`Processing ${options.length} options: ${options.join(', ')}`);
+    // Add authentication if available in context
+    if (context.secrets && context.secrets.AUTH_TOKEN) {
+      if (!headers.Authorization && !headers.authorization) {
+        headers.Authorization = `Bearer ${context.secrets.AUTH_TOKEN}`;
+      }
     }
 
-    console.log(`Successfully completed ${action} on ${target}`);
+    // Parse request body if provided
+    let body = params.requestBody;
+    if (body && typeof body === 'object') {
+      // If body is already an object, stringify it
+      body = JSON.stringify(body);
+    }
 
-    // Return structured results
+    // Parse accepted status codes
+    let acceptedStatusCodes = [];
+    if (params.acceptedStatusCodes) {
+      if (Array.isArray(params.acceptedStatusCodes)) {
+        acceptedStatusCodes = params.acceptedStatusCodes;
+      } else if (typeof params.acceptedStatusCodes === 'string') {
+        try {
+          acceptedStatusCodes = JSON.parse(params.acceptedStatusCodes);
+        } catch (e) {
+          throw new Error(`Failed to parse acceptedStatusCodes: ${e.message}`);
+        }
+      }
+    }
+
+    // Make the HTTP request
+    const result = await makeWebhookRequest(
+      params.method,
+      url,
+      headers,
+      body,
+      acceptedStatusCodes
+    );
+
+    // Add execution timestamp
+    result.executedAt = new Date().toISOString();
+
+    // Return successful response with the result
     return {
-      status: dry_run ? 'dry_run_completed' : 'success',
-      target: target,
-      action: action,
-      options_processed: options.length,
-      environment: environment,
-      processed_at: new Date().toISOString()
-      // Job completed successfully
+      status: 'success',
+      data: result
     };
   },
 
   /**
-   * Error recovery handler - implement error handling logic
-   * @param {Object} params - Original params plus error information
+   * Error handler for retryable failures
+   * @param {Object} params - Contains the error from invoke
    * @param {Object} context - Execution context
-   * @returns {Object} Recovery results
+   * @returns {Promise<Object>} Recovery result or throws for fatal errors
    */
   error: async (params, _context) => {
-    const { error, target } = params;
-    console.error(`Job encountered error while processing ${target}: ${error.message}`);
+    const { error } = params;
 
-    // TODO: Implement your error recovery logic
-    // Example: Check if error is retryable and attempt recovery
+    // Check if it's a network-related error (retryable)
+    if (error.message && (
+      error.message.includes('ECONNREFUSED') ||
+      error.message.includes('ETIMEDOUT') ||
+      error.message.includes('ENOTFOUND') ||
+      error.message.includes('fetch failed') ||
+      error.message.includes('network')
+    )) {
+      // Network errors are retryable
+      return { status: 'retry_requested' };
+    }
 
-    // For now, just throw the error - implement your logic here
-    throw new Error(`Unable to recover from error: ${error.message}`);
+    // Validation errors are fatal
+    if (error.message && (
+      error.message.includes('is required') ||
+      error.message.includes('Failed to parse') ||
+      error.message.includes('No URL specified')
+    )) {
+      throw error; // Re-throw to mark as fatal
+    }
+
+    // Default: let framework retry
+    return { status: 'retry_requested' };
   },
 
   /**
-   * Graceful shutdown handler - implement cleanup logic
-   * @param {Object} params - Original params plus halt reason
+   * Cleanup handler
+   * @param {Object} params - Input parameters
    * @param {Object} context - Execution context
-   * @returns {Object} Cleanup results
+   * @returns {Promise<Object>} Cleanup result
    */
-  halt: async (params, _context) => {
-    const { reason, target } = params;
-    console.log(`Job is being halted (${reason}) while processing ${target}`);
-
-    // TODO: Implement your cleanup logic
-    // Example: Save partial results, close connections, etc.
-
-    return {
-      status: 'halted',
-      target: target || 'unknown',
-      reason: reason,
-      halted_at: new Date().toISOString()
-    };
+  halt: async (_params, _context) => {
+    // No cleanup needed for webhook action
+    return { status: 'halted' };
   }
 };
 

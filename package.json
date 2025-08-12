@@ -1,7 +1,7 @@
 {
-  "name": "@sgnl/job-template",
+  "name": "@sgnl-actions/generic-webhook",
   "version": "1.0.0",
-  "description": "Template for SGNL JavaScript jobs",
+  "description": "Generic webhook action for SGNL Job Service",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
