@@ -57,7 +57,16 @@ export default {
   /**
    * Main execution handler
    * @param {Object} params - Input parameters
+   * @param {string} params.method - HTTP method
+   * @param {string} params.requestBody - Request body (for methods that support it)
+   * @param {string} params.requestHeaders - Headers to include
+   * @param {string} params.address - Full URL to send request to
    * @param {Object} context - Execution context with secrets and environment
+   * @param {Object} context.environment.ADDRESS - TODO
+   * @param {Object} context.secrets.BEARER.AUTH_TOKEN - TODO
+   * @param {Object} context.secrets.BASIC.USERNAME - TODO
+   * @param {Object} context.secrets.BASIC.PASSWORD - TODO
+   * TODO: Add all other auth types
    * @returns {Promise<Object>} Action result
    */
   invoke: async (params, context) => {
@@ -82,9 +91,9 @@ export default {
           url = url + params.addressSuffix;
         }
       }
-    } else if (context.environment && context.environment.BASE_URL) {
+    } else if (context.environment && context.environment.ADDRESS) {
       // Use base URL from environment
-      url = context.environment.BASE_URL;
+      url = context.environment.ADDRESS;
       if (params.addressSuffix) {
         // Handle trailing/leading slashes to avoid double slashes
         if (url.endsWith('/') && params.addressSuffix.startsWith('/')) {
@@ -96,9 +105,9 @@ export default {
         }
       }
     } else if (params.addressSuffix) {
-      throw new Error('addressSuffix provided but no base address available. Provide either address parameter or BASE_URL environment variable');
+      throw new Error('addressSuffix provided but no base address available. Provide either address parameter or address environment variable');
     } else {
-      throw new Error('No URL specified. Provide either address parameter or BASE_URL environment variable');
+      throw new Error('No URL specified. Provide either address parameter or address environment variable');
     }
 
     // Parse request headers if provided as JSON string
@@ -116,9 +125,9 @@ export default {
     }
 
     // Add authentication if available in context
-    if (context.secrets && context.secrets.AUTH_TOKEN) {
+    if (context.secrets && context.secrets.BEARER.AUTH_TOKEN) {
       if (!headers.Authorization && !headers.authorization) {
-        headers.Authorization = `Bearer ${context.secrets.AUTH_TOKEN}`;
+        headers.Authorization = `Bearer ${context.secrets.BEARER.AUTH_TOKEN}`;
       }
     }
 
