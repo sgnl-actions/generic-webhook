@@ -61,12 +61,35 @@ export default {
    * @param {string} params.requestBody - Request body (for methods that support it)
    * @param {string} params.requestHeaders - Headers to include
    * @param {string} params.address - Full URL to send request to
+   *
    * @param {Object} context - Execution context with secrets and environment
-   * @param {Object} context.environment.ADDRESS - TODO
-   * @param {Object} context.secrets.BEARER.AUTH_TOKEN - TODO
-   * @param {Object} context.secrets.BASIC.USERNAME - TODO
-   * @param {Object} context.secrets.BASIC.PASSWORD - TODO
-   * TODO: Add all other auth types
+   * @param {string} context.environment.ADDRESS - Default target address for the request
+   *
+   * * The configured auth type will determine which of the following secrets are available
+   * @param {string} context.secrets.BEARER_AUTH_TOKEN
+   * @param {string} context.secrets.BASIC_USERNAME
+   * @param {string} context.secrets.BASIC_PASSWORD
+   * @param {string} context.secrets.OAUTH2_CLIENT_CREDENTIALS_AUDIENCE
+   * @param {string} context.secrets.OAUTH2_CLIENT_CREDENTIALS_AUTH_STYLE
+   * @param {string} context.secrets.OAUTH2_CLIENT_CREDENTIALS_CLIENT_ID
+   * @param {string} context.secrets.OAUTH2_CLIENT_CREDENTIALS_CLIENT_SECRET
+   * @param {string} context.secrets.OAUTH2_CLIENT_CREDENTIALS_SCOPE
+   * @param {string} context.secrets.OAUTH2_CLIENT_CREDENTIALS_TOKEN_URL
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_ACCESS_TOKEN
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_AUTH_STYLE
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_AUTH_URL
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_AUTHORIZATION_CODE
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_CLIENT_ID
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_CLIENT_SECRET
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_LAST_TOKEN_ROTATION_TIMESTAMP
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_REDIRECT_URI
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_REFRESH_TOKEN
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_SCOPE
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_TOKEN_LIFETIME_FREQUENCY
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_TOKEN_ROTATION_FREQUENCY
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_TOKEN_ROTATION_INTERVAL
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_TOKEN_URL
+   *
    * @returns {Promise<Object>} Action result
    */
   invoke: async (params, context) => {
@@ -125,9 +148,9 @@ export default {
     }
 
     // Add authentication if available in context
-    if (context.secrets && context.secrets.BEARER.AUTH_TOKEN) {
+    if (context.secrets && context.secrets.BEARER_AUTH_TOKEN) {
       if (!headers.Authorization && !headers.authorization) {
-        headers.Authorization = `Bearer ${context.secrets.BEARER.AUTH_TOKEN}`;
+        headers.Authorization = `Bearer ${context.secrets.BEARER_AUTH_TOKEN}`;
       }
     }
 

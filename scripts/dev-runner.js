@@ -11,9 +11,7 @@ const mockContext = {
     ADDRESS: 'https://test.example.api'
   },
   secrets: {
-    BEARER: {
-      AUTH_TOKEN: 'dev-test-key-123456'
-    },
+    BEARER_AUTH_TOKEN: 'dev-test-key-123456',
   },
   outputs: {},
   partial_results: {},
