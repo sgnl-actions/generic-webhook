@@ -60,7 +60,39 @@ var script = {
   /**
    * Main execution handler
    * @param {Object} params - Input parameters
+   * @param {string} params.method - HTTP method
+   * @param {string} params.requestBody - Request body (for methods that support it)
+   * @param {string} params.requestHeaders - Headers to include
+   * @param {string} params.address - Full URL to send request to
+   *
    * @param {Object} context - Execution context with secrets and environment
+   * @param {string} context.environment.ADDRESS - Default target address for the request
+   *
+   * * The configured auth type will determine which of the following secrets are available
+   * @param {string} context.secrets.BEARER_AUTH_TOKEN
+   * @param {string} context.secrets.BASIC_USERNAME
+   * @param {string} context.secrets.BASIC_PASSWORD
+   * @param {string} context.secrets.OAUTH2_CLIENT_CREDENTIALS_AUDIENCE
+   * @param {string} context.secrets.OAUTH2_CLIENT_CREDENTIALS_AUTH_STYLE
+   * @param {string} context.secrets.OAUTH2_CLIENT_CREDENTIALS_CLIENT_ID
+   * @param {string} context.secrets.OAUTH2_CLIENT_CREDENTIALS_CLIENT_SECRET
+   * @param {string} context.secrets.OAUTH2_CLIENT_CREDENTIALS_SCOPE
+   * @param {string} context.secrets.OAUTH2_CLIENT_CREDENTIALS_TOKEN_URL
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_ACCESS_TOKEN
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_AUTH_STYLE
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_AUTH_URL
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_AUTHORIZATION_CODE
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_CLIENT_ID
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_CLIENT_SECRET
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_LAST_TOKEN_ROTATION_TIMESTAMP
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_REDIRECT_URI
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_REFRESH_TOKEN
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_SCOPE
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_TOKEN_LIFETIME_FREQUENCY
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_TOKEN_ROTATION_FREQUENCY
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_TOKEN_ROTATION_INTERVAL
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_TOKEN_URL
+   *
    * @returns {Promise<Object>} Action result
    */
   invoke: async (params, context) => {
@@ -85,9 +117,9 @@ var script = {
           url = url + params.addressSuffix;
         }
       }
-    } else if (context.environment && context.environment.BASE_URL) {
+    } else if (context.environment && context.environment.ADDRESS) {
       // Use base URL from environment
-      url = context.environment.BASE_URL;
+      url = context.environment.ADDRESS;
       if (params.addressSuffix) {
         // Handle trailing/leading slashes to avoid double slashes
         if (url.endsWith('/') && params.addressSuffix.startsWith('/')) {
@@ -99,9 +131,9 @@ var script = {
         }
       }
     } else if (params.addressSuffix) {
-      throw new Error('addressSuffix provided but no base address available. Provide either address parameter or BASE_URL environment variable');
+      throw new Error('addressSuffix provided but no base address available. Provide either address parameter or address environment variable');
     } else {
-      throw new Error('No URL specified. Provide either address parameter or BASE_URL environment variable');
+      throw new Error('No URL specified. Provide either address parameter or address environment variable');
     }
 
     // Parse request headers if provided as JSON string
@@ -119,9 +151,9 @@ var script = {
     }
 
     // Add authentication if available in context
-    if (context.secrets && context.secrets.AUTH_TOKEN) {
+    if (context.secrets && context.secrets.BEARER_AUTH_TOKEN) {
       if (!headers.Authorization && !headers.authorization) {
-        headers.Authorization = `Bearer ${context.secrets.AUTH_TOKEN}`;
+        headers.Authorization = `Bearer ${context.secrets.BEARER_AUTH_TOKEN}`;
       }
     }
 
