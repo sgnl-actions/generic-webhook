@@ -67,17 +67,17 @@ export default {
    *
    * The configured auth type will determine which of the following environment variables and secrets are available
    * @param {string} context.secrets.BEARER_AUTH_TOKEN
-   * 
+   *
    * @param {string} context.secrets.BASIC_USERNAME
    * @param {string} context.secrets.BASIC_PASSWORD
-   * 
+   *
    * @param {string} context.secrets.OAUTH2_CLIENT_CREDENTIALS_CLIENT_SECRET
    * @param {string} context.environment.OAUTH2_CLIENT_CREDENTIALS_AUDIENCE
    * @param {string} context.environment.OAUTH2_CLIENT_CREDENTIALS_AUTH_STYLE
    * @param {string} context.environment.OAUTH2_CLIENT_CREDENTIALS_CLIENT_ID
    * @param {string} context.environment.OAUTH2_CLIENT_CREDENTIALS_SCOPE
    * @param {string} context.environment.OAUTH2_CLIENT_CREDENTIALS_TOKEN_URL
-   * 
+   *
    * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_ACCESS_TOKEN
    * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_AUTHORIZATION_CODE
    * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_CLIENT_SECRET
