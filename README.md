@@ -20,13 +20,13 @@ Configure these secrets in your SGNL integration if authentication is required:
 
 | Secret | Description | Required |
 |--------|-------------|----------|
-| `AUTH_TOKEN` | Bearer token for API authentication | No |
+| `BEARER_AUTH_TOKEN` | Bearer token for API authentication | No |
 
 ### Environment Variables
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `BASE_URL` | Default base URL when address parameter is not provided | No |
+| `ADDRESS` | Default base URL when address parameter is not provided | No |
 
 ### Input Parameters
 
@@ -39,7 +39,7 @@ Configure these secrets in your SGNL integration if authentication is required:
 | `requestHeaders` | string/object | Custom headers to include (JSON string or object) | No |
 | `acceptedStatusCodes` | array | Additional HTTP status codes to treat as success (e.g., [404]) | No |
 
-*Either `address` or `BASE_URL` environment variable must be provided
+*Either `address` input param or `ADDRESS` environment variable must be provided
 
 ### Output Structure
 
@@ -85,9 +85,9 @@ Configure these secrets in your SGNL integration if authentication is required:
 }
 ```
 
-### Using BASE_URL Environment Variable
+### Using ADDRESS Environment Variable
 
-With `BASE_URL` set to `https://api.example.com/v1`:
+With `ADDRESS` set to `https://api.example.com/v1`:
 
 ```json
 {
@@ -122,7 +122,7 @@ The action distinguishes between retryable and fatal errors:
 1. **URL Validation**: The action does not validate URLs. Ensure you trust the endpoints being called.
 
 2. **Authentication**: 
-   - Bearer token authentication is automatically added if `AUTH_TOKEN` secret is configured
+   - Bearer token authentication is automatically added if `BEARER_AUTH_TOKEN` secret is configured
    - Custom auth headers can be provided via `requestHeaders` parameter
    - Custom headers take precedence over automatic authentication
 
@@ -168,7 +168,7 @@ npm run lint:fix
 ### Common Issues
 
 1. **"No URL specified" Error**
-   - Ensure either `address` parameter or `BASE_URL` environment variable is set
+   - Ensure either `address` parameter or `ADDRESS` environment variable is set
    
 2. **"Failed to parse requestHeaders" Error**
    - Verify requestHeaders is valid JSON if provided as string
@@ -178,7 +178,7 @@ npm run lint:fix
    - Verify firewall rules allow outbound connections
    
 4. **Authentication Failures**
-   - Confirm AUTH_TOKEN secret is correctly configured
+   - Confirm `BEARER_AUTH_TOKEN` secret is correctly configured
    - Check if custom Authorization header is needed
 
 ### Debug Information

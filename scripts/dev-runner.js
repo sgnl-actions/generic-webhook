@@ -7,11 +7,11 @@
 import script from '../src/script.mjs';
 
 const mockContext = {
-  env: {
-    ENVIRONMENT: 'development'
+  environment: {
+    ADDRESS: 'https://test.example.api'
   },
   secrets: {
-    API_KEY: 'dev-test-key-123456'
+    BEARER_AUTH_TOKEN: 'dev-test-key-123456',
   },
   outputs: {},
   partial_results: {},
@@ -19,10 +19,10 @@ const mockContext = {
 };
 
 const mockParams = {
-  target: 'dev-test@example.com',
-  action: 'create',
-  options: ['notify', 'audit'],
-  dry_run: false
+  method: 'POST',
+  requestBody: '{"text":"User {$.user.profile__email} signed in"}',
+  // requestHeaders: ...,
+  // address: '...'
 };
 
 async function runDev() {

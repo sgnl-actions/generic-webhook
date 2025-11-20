@@ -62,7 +62,7 @@ describe('Generic Webhook Action', () => {
 
       const context = {
         secrets: {
-          AUTH_TOKEN: 'secret-token'
+          BEARER_AUTH_TOKEN: 'secret-token'
         }
       };
 
@@ -86,7 +86,7 @@ describe('Generic Webhook Action', () => {
       );
     });
 
-    it('should use BASE_URL from environment when address not provided', async () => {
+    it('should use ADDRESS from environment when address param not provided', async () => {
       const mockResponse = {
         status: 200,
         text: jest.fn().mockResolvedValue('OK')
@@ -100,7 +100,7 @@ describe('Generic Webhook Action', () => {
 
       const context = {
         environment: {
-          BASE_URL: 'https://api.example.com/v1'
+          ADDRESS: 'https://api.example.com/v1'
         }
       };
 
@@ -408,7 +408,7 @@ describe('Generic Webhook Action', () => {
 
     it('should mark missing URL errors as fatal', async () => {
       const params = {
-        error: new Error('No URL specified. Provide either address parameter or BASE_URL environment variable')
+        error: new Error('No URL specified. Provide either address parameter or ADDRESS environment variable')
       };
       const context = {};
 
