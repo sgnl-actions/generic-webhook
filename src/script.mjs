@@ -5,6 +5,8 @@
  * Supports all standard HTTP methods and custom headers/body.
  */
 
+import { getAuthorizationHeader, getBaseUrl } from '@sgnl-actions/utils';
+
 /**
  * Helper function to make HTTP request
  * @param {string} method - HTTP method
@@ -79,19 +81,6 @@ export default {
    * @param {string} context.environment.OAUTH2_CLIENT_CREDENTIALS_TOKEN_URL
    *
    * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_ACCESS_TOKEN
-   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_AUTHORIZATION_CODE
-   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_CLIENT_SECRET
-   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_REFRESH_TOKEN
-   * @param {string} context.environment.OAUTH2_AUTHORIZATION_CODE_AUTH_STYLE
-   * @param {string} context.environment.OAUTH2_AUTHORIZATION_CODE_AUTH_URL
-   * @param {string} context.environment.OAUTH2_AUTHORIZATION_CODE_CLIENT_ID
-   * @param {string} context.environment.OAUTH2_AUTHORIZATION_CODE_LAST_TOKEN_ROTATION_TIMESTAMP
-   * @param {string} context.environment.OAUTH2_AUTHORIZATION_CODE_REDIRECT_URI
-   * @param {string} context.environment.OAUTH2_AUTHORIZATION_CODE_SCOPE
-   * @param {string} context.environment.OAUTH2_AUTHORIZATION_CODE_TOKEN_LIFETIME_FREQUENCY
-   * @param {string} context.environment.OAUTH2_AUTHORIZATION_CODE_TOKEN_ROTATION_FREQUENCY
-   * @param {string} context.environment.OAUTH2_AUTHORIZATION_CODE_TOKEN_ROTATION_INTERVAL
-   * @param {string} context.environment.OAUTH2_AUTHORIZATION_CODE_TOKEN_URL
    *
    * @returns {Promise<Object>} Action result
    */
@@ -101,39 +90,25 @@ export default {
       throw new Error('method is required');
     }
 
-    // Determine the URL to use
+    // Build the URL using utility function
+    // getBaseUrl handles params.address vs context.environment.ADDRESS and removes trailing slashes
     let url;
-    if (params.address) {
-      // If full address is provided, use it directly
-      url = params.address;
-      // Append suffix if provided
+    try {
+      url = getBaseUrl(params, context);
+    } catch (error) {
+      // If addressSuffix is provided but no base URL, give a more specific error
       if (params.addressSuffix) {
-        // Handle trailing/leading slashes to avoid double slashes
-        if (url.endsWith('/') && params.addressSuffix.startsWith('/')) {
-          url = url + params.addressSuffix.substring(1);
-        } else if (!url.endsWith('/') && !params.addressSuffix.startsWith('/')) {
-          url = url + '/' + params.addressSuffix;
-        } else {
-          url = url + params.addressSuffix;
-        }
+        throw new Error('addressSuffix provided but no base address available. Provide either address parameter or ADDRESS environment variable');
       }
-    } else if (context.environment && context.environment.ADDRESS) {
-      // Use base URL from environment
-      url = context.environment.ADDRESS;
-      if (params.addressSuffix) {
-        // Handle trailing/leading slashes to avoid double slashes
-        if (url.endsWith('/') && params.addressSuffix.startsWith('/')) {
-          url = url + params.addressSuffix.substring(1);
-        } else if (!url.endsWith('/') && !params.addressSuffix.startsWith('/')) {
-          url = url + '/' + params.addressSuffix;
-        } else {
-          url = url + params.addressSuffix;
-        }
-      }
-    } else if (params.addressSuffix) {
-      throw new Error('addressSuffix provided but no base address available. Provide either address parameter or address environment variable');
-    } else {
-      throw new Error('No URL specified. Provide either address parameter or address environment variable');
+      throw error;
+    }
+
+    // Append suffix if provided
+    if (params.addressSuffix) {
+      // getBaseUrl already removed trailing slash from base URL
+      // Add leading slash to suffix if it doesn't have one
+      const suffix = params.addressSuffix.startsWith('/') ? params.addressSuffix : '/' + params.addressSuffix;
+      url = url + suffix;
     }
 
     // Parse request headers if provided as JSON string
@@ -150,10 +125,17 @@ export default {
       }
     }
 
-    // Add authentication if available in context
-    if (context.secrets && context.secrets.BEARER_AUTH_TOKEN) {
-      if (!headers.Authorization && !headers.authorization) {
-        headers.Authorization = `Bearer ${context.secrets.BEARER_AUTH_TOKEN}`;
+    // Add authentication if available in context and not already set in headers
+    if (!headers.Authorization && !headers.authorization) {
+      try {
+        const authHeader = await getAuthorizationHeader(context);
+        headers.Authorization = authHeader;
+      } catch (error) {
+        // If no auth is configured, that's okay for generic webhook - it's optional
+        // Only throw if it's an error other than "no auth configured"
+        if (!error.message.includes('No authentication configured')) {
+          throw error;
+        }
       }
     }
 
