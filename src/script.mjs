@@ -5,7 +5,7 @@
  * Supports all standard HTTP methods and custom headers/body.
  */
 
-import { getAuthorizationHeader } from '@sgnl-actions/utils';
+import { getAuthorizationHeader, getBaseUrl } from '@sgnl-actions/utils';
 
 /**
  * Helper function to make HTTP request
@@ -90,39 +90,25 @@ export default {
       throw new Error('method is required');
     }
 
-    // Determine the URL to use
+    // Build the URL using utility function
+    // getBaseUrl handles params.address vs context.environment.ADDRESS and removes trailing slashes
     let url;
-    if (params.address) {
-      // If full address is provided, use it directly
-      url = params.address;
-      // Append suffix if provided
+    try {
+      url = getBaseUrl(params, context);
+    } catch (error) {
+      // If addressSuffix is provided but no base URL, give a more specific error
       if (params.addressSuffix) {
-        // Handle trailing/leading slashes to avoid double slashes
-        if (url.endsWith('/') && params.addressSuffix.startsWith('/')) {
-          url = url + params.addressSuffix.substring(1);
-        } else if (!url.endsWith('/') && !params.addressSuffix.startsWith('/')) {
-          url = url + '/' + params.addressSuffix;
-        } else {
-          url = url + params.addressSuffix;
-        }
+        throw new Error('addressSuffix provided but no base address available. Provide either address parameter or ADDRESS environment variable');
       }
-    } else if (context.environment && context.environment.ADDRESS) {
-      // Use base URL from environment
-      url = context.environment.ADDRESS;
-      if (params.addressSuffix) {
-        // Handle trailing/leading slashes to avoid double slashes
-        if (url.endsWith('/') && params.addressSuffix.startsWith('/')) {
-          url = url + params.addressSuffix.substring(1);
-        } else if (!url.endsWith('/') && !params.addressSuffix.startsWith('/')) {
-          url = url + '/' + params.addressSuffix;
-        } else {
-          url = url + params.addressSuffix;
-        }
-      }
-    } else if (params.addressSuffix) {
-      throw new Error('addressSuffix provided but no base address available. Provide either address parameter or address environment variable');
-    } else {
-      throw new Error('No URL specified. Provide either address parameter or address environment variable');
+      throw error;
+    }
+
+    // Append suffix if provided
+    if (params.addressSuffix) {
+      // getBaseUrl already removed trailing slash from base URL
+      // Add leading slash to suffix if it doesn't have one
+      const suffix = params.addressSuffix.startsWith('/') ? params.addressSuffix : '/' + params.addressSuffix;
+      url = url + suffix;
     }
 
     // Parse request headers if provided as JSON string
