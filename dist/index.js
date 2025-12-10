@@ -528,7 +528,7 @@ var script = {
     // Resolve JSONPath templates in params
     const { result: resolvedParams, errors } = resolveJSONPathTemplates(params, jobContext);
     if (errors.length > 0) {
-      console.warn('Template resolution errors:', errors);
+      throw new Error(`Failed to resolve template values: ${errors.join(', ')}`);
     }
 
     // Validate required parameters
@@ -650,6 +650,7 @@ var script = {
     if (error.message && (
       error.message.includes('is required') ||
       error.message.includes('Failed to parse') ||
+      error.message.includes('Failed to resolve template values') ||
       error.message.includes('No URL specified')
     )) {
       throw error; // Re-throw to mark as fatal
