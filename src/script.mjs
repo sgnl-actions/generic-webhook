@@ -58,11 +58,11 @@ async function makeWebhookRequest(method, url, headers, body, acceptedStatusCode
 export default {
   /**
    * Main execution handler
-   * @param {Object} resolvedParams - Input parameters
-   * @param {string} resolvedParams.method - HTTP method
-   * @param {string} resolvedParams.requestBody - Request body (for methods that support it)
-   * @param {string} resolvedParams.requestHeaders - Headers to include
-   * @param {string} resolvedParams.address - Full URL to send request to
+   * @param {Object} params - Input parameters
+   * @param {string} params.method - HTTP method
+   * @param {string} params.requestBody - Request body (for methods that support it)
+   * @param {string} params.requestHeaders - Headers to include
+   * @param {string} params.address - Full URL to send request to
    *
    * @param {Object} context - Execution context with secrets and environment
    * @param {string} context.environment.ADDRESS - Default target address for the request
