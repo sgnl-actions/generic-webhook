@@ -5,7 +5,7 @@
  * Supports all standard HTTP methods and custom headers/body.
  */
 
-import { getAuthorizationHeader, getBaseUrl } from '@sgnl-actions/utils';
+import { getAuthorizationHeader, getBaseURL, resolveJSONPathTemplates} from '@sgnl-actions/utils';
 
 /**
  * Helper function to make HTTP request
@@ -58,11 +58,11 @@ async function makeWebhookRequest(method, url, headers, body, acceptedStatusCode
 export default {
   /**
    * Main execution handler
-   * @param {Object} params - Input parameters
-   * @param {string} params.method - HTTP method
-   * @param {string} params.requestBody - Request body (for methods that support it)
-   * @param {string} params.requestHeaders - Headers to include
-   * @param {string} params.address - Full URL to send request to
+   * @param {Object} resolvedParams - Input parameters
+   * @param {string} resolvedParams.method - HTTP method
+   * @param {string} resolvedParams.requestBody - Request body (for methods that support it)
+   * @param {string} resolvedParams.requestHeaders - Headers to include
+   * @param {string} resolvedParams.address - Full URL to send request to
    *
    * @param {Object} context - Execution context with secrets and environment
    * @param {string} context.environment.ADDRESS - Default target address for the request
@@ -85,8 +85,16 @@ export default {
    * @returns {Promise<Object>} Action result
    */
   invoke: async (params, context) => {
+    const jobContext = context.data || {};
+
+    // Resolve JSONPath templates in params
+    const { result: resolvedParams, errors } = resolveJSONPathTemplates(params, jobContext);
+    if (errors.length > 0) {
+      console.warn('Template resolution errors:', errors);
+    }
+
     // Validate required parameters
-    if (!params.method) {
+    if (!resolvedParams.method) {
       throw new Error('method is required');
     }
 
@@ -94,31 +102,31 @@ export default {
     // getBaseUrl handles params.address vs context.environment.ADDRESS and removes trailing slashes
     let url;
     try {
-      url = getBaseUrl(params, context);
+      url = getBaseURL(resolvedParams, context);
     } catch (error) {
       // If addressSuffix is provided but no base URL, give a more specific error
-      if (params.addressSuffix) {
+      if (resolvedParams.addressSuffix) {
         throw new Error('addressSuffix provided but no base address available. Provide either address parameter or ADDRESS environment variable');
       }
       throw error;
     }
 
     // Append suffix if provided
-    if (params.addressSuffix) {
+    if (resolvedParams.addressSuffix) {
       // getBaseUrl already removed trailing slash from base URL
       // Add leading slash to suffix if it doesn't have one
-      const suffix = params.addressSuffix.startsWith('/') ? params.addressSuffix : '/' + params.addressSuffix;
+      const suffix = resolvedParams.addressSuffix.startsWith('/') ? resolvedParams.addressSuffix : '/' + resolvedParams.addressSuffix;
       url = url + suffix;
     }
 
     // Parse request headers if provided as JSON string
     let headers = {};
-    if (params.requestHeaders) {
+    if (resolvedParams.requestHeaders) {
       try {
-        if (typeof params.requestHeaders === 'string') {
-          headers = JSON.parse(params.requestHeaders);
-        } else if (typeof params.requestHeaders === 'object') {
-          headers = params.requestHeaders;
+        if (typeof resolvedParams.requestHeaders === 'string') {
+          headers = JSON.parse(resolvedParams.requestHeaders);
+        } else if (typeof resolvedParams.requestHeaders === 'object') {
+          headers = resolvedParams.requestHeaders;
         }
       } catch (e) {
         throw new Error(`Failed to parse requestHeaders: ${e.message}`);
@@ -140,7 +148,7 @@ export default {
     }
 
     // Parse request body if provided
-    let body = params.requestBody;
+    let body = resolvedParams.requestBody;
     if (body && typeof body === 'object') {
       // If body is already an object, stringify it
       body = JSON.stringify(body);
@@ -148,12 +156,12 @@ export default {
 
     // Parse accepted status codes
     let acceptedStatusCodes = [];
-    if (params.acceptedStatusCodes) {
-      if (Array.isArray(params.acceptedStatusCodes)) {
-        acceptedStatusCodes = params.acceptedStatusCodes;
-      } else if (typeof params.acceptedStatusCodes === 'string') {
+    if (resolvedParams.acceptedStatusCodes) {
+      if (Array.isArray(resolvedParams.acceptedStatusCodes)) {
+        acceptedStatusCodes = resolvedParams.acceptedStatusCodes;
+      } else if (typeof resolvedParams.acceptedStatusCodes === 'string') {
         try {
-          acceptedStatusCodes = JSON.parse(params.acceptedStatusCodes);
+          acceptedStatusCodes = JSON.parse(resolvedParams.acceptedStatusCodes);
         } catch (e) {
           throw new Error(`Failed to parse acceptedStatusCodes: ${e.message}`);
         }
@@ -162,7 +170,7 @@ export default {
 
     // Make the HTTP request
     const result = await makeWebhookRequest(
-      params.method,
+      resolvedParams.method,
       url,
       headers,
       body,
