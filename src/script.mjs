@@ -84,7 +84,7 @@ export default {
    *
    * @returns {Promise<Object>} Action result
    */
-  invoke: async (params, context) => {
+  invoke: async (context, params) => {
     console.warn("Context", context);
     console.warn("Context Environment", context.environment);
     console.warn("Context Env", context.env);
