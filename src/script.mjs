@@ -85,6 +85,11 @@ export default {
    * @returns {Promise<Object>} Action result
    */
   invoke: async (params, context) => {
+    console.warn("Context", context);
+    console.warn("Context Environment", context.environment);
+    console.warn("Context Env", context.env);
+
+    console.warn("Params", params);
     const jobContext = context.data || {};
 
     // Resolve JSONPath templates in params
@@ -102,10 +107,6 @@ export default {
     // getBaseUrl handles params.address vs context.environment.ADDRESS and removes trailing slashes
     let url;
     try {
-      console.warn("Context", context);
-      console.warn("Context Environment", context.environment)
-      console.warn("Context Env", context.env)
-
       url = getBaseURL(resolvedParams, context);
     } catch (error) {
       // If addressSuffix is provided but no base URL, give a more specific error
