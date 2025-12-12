@@ -540,6 +540,8 @@ var script = {
     // getBaseUrl handles params.address vs context.environment.ADDRESS and removes trailing slashes
     let url;
     try {
+      console.warn("Context", context);
+
       url = getBaseURL(resolvedParams, context);
     } catch (error) {
       // If addressSuffix is provided but no base URL, give a more specific error

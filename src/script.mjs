@@ -102,7 +102,7 @@ export default {
     // getBaseUrl handles params.address vs context.environment.ADDRESS and removes trailing slashes
     let url;
     try {
-      console.warn("Context", context)
+      console.warn("Context", context);
 
       url = getBaseURL(resolvedParams, context);
     } catch (error) {
