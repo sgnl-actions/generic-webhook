@@ -541,6 +541,8 @@ var script = {
     let url;
     try {
       console.warn("Context", context);
+      console.warn("Context Environment", context.environment);
+      console.warn("Context Env", context.env);
 
       url = getBaseURL(resolvedParams, context);
     } catch (error) {
