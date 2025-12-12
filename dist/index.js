@@ -522,7 +522,7 @@ var script = {
    *
    * @returns {Promise<Object>} Action result
    */
-  invoke: async (context, params) => {
+  invoke: async (params, context) => {
     console.warn("Context", context);
     console.warn("Context Environment", context.environment);
     console.warn("Context Env", context.env);
