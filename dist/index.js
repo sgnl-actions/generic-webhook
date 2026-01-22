@@ -617,7 +617,9 @@ var script = {
 
     // Check if the request was successful
     if (!result.success) {
-      throw new Error(`HTTP ${result.statusCode}: Request failed - ${result.body}`);
+      throw new Error(
+        `Request failed with status code: ${result.statusCode}. Response body: ${result.body}.`
+      );
     }
 
     // Add execution timestamp
