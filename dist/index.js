@@ -615,6 +615,11 @@ var script = {
       acceptedStatusCodes
     );
 
+    // Check if the request was successful
+    if (!result.success) {
+      throw new Error(`HTTP ${result.statusCode}: Request failed - ${result.body}`);
+    }
+
     // Add execution timestamp
     result.executedAt = new Date().toISOString();
 
