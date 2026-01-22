@@ -615,7 +615,6 @@ var script = {
       acceptedStatusCodes
     );
 
-    // Check if the request was successful
     if (!result.success) {
       throw new Error(
         `Request failed with status code: ${result.statusCode}. Response body: ${result.body}.`
