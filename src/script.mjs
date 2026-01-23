@@ -5,7 +5,7 @@
  * Supports all standard HTTP methods and custom headers/body.
  */
 
-import { getAuthorizationHeader, getBaseURL, resolveJSONPathTemplates} from '@sgnl-actions/utils';
+import { getAuthorizationHeader, getBaseURL} from '@sgnl-actions/utils';
 
 /**
  * Helper function to make HTTP request
@@ -85,16 +85,9 @@ export default {
    * @returns {Promise<Object>} Action result
    */
   invoke: async (params, context) => {
-    const jobContext = context.data || {};
-
-    // Resolve JSONPath templates in params
-    const { result: resolvedParams, errors } = resolveJSONPathTemplates(params, jobContext);
-    if (errors.length > 0) {
-      console.warn('Template resolution errors:', errors);
-    }
 
     // Validate required parameters
-    if (!resolvedParams.method) {
+    if (!params.method) {
       throw new Error('method is required');
     }
 
@@ -102,31 +95,31 @@ export default {
     // getBaseUrl handles params.address vs context.environment.ADDRESS and removes trailing slashes
     let url;
     try {
-      url = getBaseURL(resolvedParams, context);
+      url = getBaseURL(params, context);
     } catch (error) {
       // If addressSuffix is provided but no base URL, give a more specific error
-      if (resolvedParams.addressSuffix) {
+      if (params.addressSuffix) {
         throw new Error('addressSuffix provided but no base address available. Provide either address parameter or ADDRESS environment variable');
       }
       throw error;
     }
 
     // Append suffix if provided
-    if (resolvedParams.addressSuffix) {
+    if (params.addressSuffix) {
       // getBaseUrl already removed trailing slash from base URL
       // Add leading slash to suffix if it doesn't have one
-      const suffix = resolvedParams.addressSuffix.startsWith('/') ? resolvedParams.addressSuffix : '/' + resolvedParams.addressSuffix;
+      const suffix = params.addressSuffix.startsWith('/') ? params.addressSuffix : '/' + params.addressSuffix;
       url = url + suffix;
     }
 
     // Parse request headers if provided as JSON string
     let headers = {};
-    if (resolvedParams.requestHeaders) {
+    if (params.requestHeaders) {
       try {
-        if (typeof resolvedParams.requestHeaders === 'string') {
-          headers = JSON.parse(resolvedParams.requestHeaders);
-        } else if (typeof resolvedParams.requestHeaders === 'object') {
-          headers = resolvedParams.requestHeaders;
+        if (typeof params.requestHeaders === 'string') {
+          headers = JSON.parse(params.requestHeaders);
+        } else if (typeof params.requestHeaders === 'object') {
+          headers = params.requestHeaders;
         }
       } catch (e) {
         throw new Error(`Failed to parse requestHeaders: ${e.message}`);
@@ -148,7 +141,7 @@ export default {
     }
 
     // Parse request body if provided
-    let body = resolvedParams.requestBody;
+    let body = params.requestBody;
     if (body && typeof body === 'object') {
       // If body is already an object, stringify it
       body = JSON.stringify(body);
@@ -156,12 +149,12 @@ export default {
 
     // Parse accepted status codes
     let acceptedStatusCodes = [];
-    if (resolvedParams.acceptedStatusCodes) {
-      if (Array.isArray(resolvedParams.acceptedStatusCodes)) {
-        acceptedStatusCodes = resolvedParams.acceptedStatusCodes;
-      } else if (typeof resolvedParams.acceptedStatusCodes === 'string') {
+    if (params.acceptedStatusCodes) {
+      if (Array.isArray(params.acceptedStatusCodes)) {
+        acceptedStatusCodes = params.acceptedStatusCodes;
+      } else if (typeof params.acceptedStatusCodes === 'string') {
         try {
-          acceptedStatusCodes = JSON.parse(resolvedParams.acceptedStatusCodes);
+          acceptedStatusCodes = JSON.parse(params.acceptedStatusCodes);
         } catch (e) {
           throw new Error(`Failed to parse acceptedStatusCodes: ${e.message}`);
         }
@@ -170,7 +163,7 @@ export default {
 
     // Make the HTTP request
     const result = await makeWebhookRequest(
-      resolvedParams.method,
+      params.method,
       url,
       headers,
       body,
