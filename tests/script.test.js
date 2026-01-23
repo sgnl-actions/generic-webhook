@@ -357,11 +357,263 @@ describe('Generic Webhook Action', () => {
 
       const context = {};
 
+      await expect(script.invoke(params, context)).rejects.toThrow(
+        'Request failed with status code: 400. Response body: Bad Request.'
+      );
+    });
+
+    it('should throw error with proper format for failed requests with JSON response', async () => {
+      const mockResponse = {
+        status: 500,
+        text: jest.fn().mockResolvedValue('{"error":"Internal server error","details":"Database connection failed"}')
+      };
+      global.fetch.mockResolvedValue(mockResponse);
+
+      const params = {
+        method: 'POST',
+        address: 'https://api.example.com/users',
+        requestBody: '{"name":"test"}'
+      };
+
+      const context = {};
+
+      await expect(script.invoke(params, context)).rejects.toThrow(
+        'Request failed with status code: 500. Response body: {"error":"Internal server error","details":"Database connection failed"}.'
+      );
+    });
+
+    it('should throw error for 404 when not in acceptedStatusCodes', async () => {
+      const mockResponse = {
+        status: 404,
+        text: jest.fn().mockResolvedValue('Not found')
+      };
+      global.fetch.mockResolvedValue(mockResponse);
+
+      const params = {
+        method: 'GET',
+        address: 'https://api.example.com/missing'
+      };
+
+      const context = {};
+
+      await expect(script.invoke(params, context)).rejects.toThrow(
+        'Request failed with status code: 404. Response body: Not found.'
+      );
+    });
+
+    it('should handle template resolution with context data', async () => {
+      const mockResponse = {
+        status: 200,
+        text: jest.fn().mockResolvedValue('OK')
+      };
+      global.fetch.mockResolvedValue(mockResponse);
+
+      const params = {
+        method: 'POST',
+        address: 'https://api.example.com/users/{$.userId}/update',
+        requestBody: '{"status":"{$.status}"}'
+      };
+
+      const context = {
+        data: {
+          userId: '12345',
+          status: 'active'
+        }
+      };
+
+      await script.invoke(params, context);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://api.example.com/users/12345/update',
+        expect.objectContaining({
+          body: '{"status":"active"}'
+        })
+      );
+    });
+
+    it('should handle complex JSONPath template in request body', async () => {
+      const mockResponse = {
+        status: 200,
+        text: jest.fn().mockResolvedValue('OK')
+      };
+      global.fetch.mockResolvedValue(mockResponse);
+
+      const params = {
+        method: 'POST',
+        address: 'https://api.example.com/webhook',
+        requestBody: {
+          user: '{$.user.email}',
+          timestamp: '{$.metadata.timestamp}'
+        }
+      };
+
+      const context = {
+        data: {
+          user: { email: 'test@example.com' },
+          metadata: { timestamp: '2024-01-01T00:00:00Z' }
+        }
+      };
+
+      await script.invoke(params, context);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://api.example.com/webhook',
+        expect.objectContaining({
+          body: '{"user":"test@example.com","timestamp":"2024-01-01T00:00:00Z"}'
+        })
+      );
+    });
+
+    it('should handle array of accepted status codes as array', async () => {
+      const mockResponse = {
+        status: 202,
+        text: jest.fn().mockResolvedValue('Accepted')
+      };
+      global.fetch.mockResolvedValue(mockResponse);
+
+      const params = {
+        method: 'POST',
+        address: 'https://api.example.com/async',
+        acceptedStatusCodes: [200, 201, 202, 204]
+      };
+
+      const context = {};
+
       const result = await script.invoke(params, context);
 
-      expect(result.status).toBe('success'); // Action succeeded
-      expect(result.data.statusCode).toBe(400);
-      expect(result.data.success).toBe(false); // But request failed
+      expect(result.status).toBe('success');
+      expect(result.data.statusCode).toBe(202);
+      expect(result.data.success).toBe(true);
+    });
+
+    it('should add Content-Type header only when body is present', async () => {
+      const mockResponse = {
+        status: 200,
+        text: jest.fn().mockResolvedValue('OK')
+      };
+      global.fetch.mockResolvedValue(mockResponse);
+
+      const params = {
+        method: 'POST',
+        address: 'https://api.example.com/endpoint',
+        requestBody: '{"data":"value"}'
+      };
+
+      const context = {};
+
+      await script.invoke(params, context);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://api.example.com/endpoint',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'Content-Type': 'application/json'
+          })
+        })
+      );
+    });
+
+    it('should not override user-provided Content-Type header', async () => {
+      const mockResponse = {
+        status: 200,
+        text: jest.fn().mockResolvedValue('OK')
+      };
+      global.fetch.mockResolvedValue(mockResponse);
+
+      const params = {
+        method: 'POST',
+        address: 'https://api.example.com/endpoint',
+        requestBody: 'plain text data',
+        requestHeaders: { 'Content-Type': 'text/plain' }
+      };
+
+      const context = {};
+
+      await script.invoke(params, context);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://api.example.com/endpoint',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'Content-Type': 'text/plain'
+          })
+        })
+      );
+    });
+
+    it('should handle DELETE method with body', async () => {
+      const mockResponse = {
+        status: 200,
+        text: jest.fn().mockResolvedValue('Deleted')
+      };
+      global.fetch.mockResolvedValue(mockResponse);
+
+      const params = {
+        method: 'DELETE',
+        address: 'https://api.example.com/bulk-delete',
+        requestBody: '{"ids":[1,2,3]}'
+      };
+
+      const context = {};
+
+      await script.invoke(params, context);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://api.example.com/bulk-delete',
+        expect.objectContaining({
+          method: 'DELETE',
+          body: '{"ids":[1,2,3]}'
+        })
+      );
+    });
+
+    it('should handle case-insensitive HTTP methods', async () => {
+      const mockResponse = {
+        status: 200,
+        text: jest.fn().mockResolvedValue('OK')
+      };
+      global.fetch.mockResolvedValue(mockResponse);
+
+      const params = {
+        method: 'post',
+        address: 'https://api.example.com/endpoint',
+        requestBody: '{"test":"data"}'
+      };
+
+      const context = {};
+
+      await script.invoke(params, context);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://api.example.com/endpoint',
+        expect.objectContaining({
+          method: 'POST'
+        })
+      );
+    });
+
+    it('should include executedAt timestamp in successful response', async () => {
+      const mockResponse = {
+        status: 200,
+        text: jest.fn().mockResolvedValue('OK')
+      };
+      global.fetch.mockResolvedValue(mockResponse);
+
+      const params = {
+        method: 'GET',
+        address: 'https://api.example.com/endpoint'
+      };
+
+      const context = {};
+
+      const beforeTime = new Date().toISOString();
+      const result = await script.invoke(params, context);
+      const afterTime = new Date().toISOString();
+
+      expect(result.data.executedAt).toBeDefined();
+      expect(result.data.executedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+      expect(result.data.executedAt >= beforeTime).toBe(true);
+      expect(result.data.executedAt <= afterTime).toBe(true);
     });
   });
 
@@ -380,6 +632,28 @@ describe('Generic Webhook Action', () => {
     it('should mark timeout errors as retryable', async () => {
       const params = {
         error: new Error('Request timeout: ETIMEDOUT')
+      };
+      const context = {};
+
+      const result = await script.error(params, context);
+
+      expect(result).toEqual({ status: 'retry_requested' });
+    });
+
+    it('should mark ENOTFOUND errors as retryable', async () => {
+      const params = {
+        error: new Error('getaddrinfo ENOTFOUND api.example.com')
+      };
+      const context = {};
+
+      const result = await script.error(params, context);
+
+      expect(result).toEqual({ status: 'retry_requested' });
+    });
+
+    it('should mark generic network errors as retryable', async () => {
+      const params = {
+        error: new Error('network error occurred')
       };
       const context = {};
 
@@ -413,6 +687,28 @@ describe('Generic Webhook Action', () => {
       const context = {};
 
       await expect(script.error(params, context)).rejects.toThrow('No URL specified');
+    });
+
+    it('should mark HTTP error as retryable by default', async () => {
+      const params = {
+        error: new Error('Request failed with status code: 500. Response body: Internal Server Error.')
+      };
+      const context = {};
+
+      const result = await script.error(params, context);
+
+      expect(result).toEqual({ status: 'retry_requested' });
+    });
+
+    it('should mark HTTP 400 error as retryable by default', async () => {
+      const params = {
+        error: new Error('Request failed with status code: 400. Response body: Bad Request.')
+      };
+      const context = {};
+
+      const result = await script.error(params, context);
+
+      expect(result).toEqual({ status: 'retry_requested' });
     });
 
     it('should default to retryable for unknown errors', async () => {
