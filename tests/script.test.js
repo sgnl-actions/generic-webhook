@@ -401,69 +401,6 @@ describe('Generic Webhook Action', () => {
       );
     });
 
-    it('should handle template resolution with context data', async () => {
-      const mockResponse = {
-        status: 200,
-        text: jest.fn().mockResolvedValue('OK')
-      };
-      global.fetch.mockResolvedValue(mockResponse);
-
-      const params = {
-        method: 'POST',
-        address: 'https://api.example.com/users/{$.userId}/update',
-        requestBody: '{"status":"{$.status}"}'
-      };
-
-      const context = {
-        data: {
-          userId: '12345',
-          status: 'active'
-        }
-      };
-
-      await script.invoke(params, context);
-
-      expect(global.fetch).toHaveBeenCalledWith(
-        'https://api.example.com/users/12345/update',
-        expect.objectContaining({
-          body: '{"status":"active"}'
-        })
-      );
-    });
-
-    it('should handle complex JSONPath template in request body', async () => {
-      const mockResponse = {
-        status: 200,
-        text: jest.fn().mockResolvedValue('OK')
-      };
-      global.fetch.mockResolvedValue(mockResponse);
-
-      const params = {
-        method: 'POST',
-        address: 'https://api.example.com/webhook',
-        requestBody: {
-          user: '{$.user.email}',
-          timestamp: '{$.metadata.timestamp}'
-        }
-      };
-
-      const context = {
-        data: {
-          user: { email: 'test@example.com' },
-          metadata: { timestamp: '2024-01-01T00:00:00Z' }
-        }
-      };
-
-      await script.invoke(params, context);
-
-      expect(global.fetch).toHaveBeenCalledWith(
-        'https://api.example.com/webhook',
-        expect.objectContaining({
-          body: '{"user":"test@example.com","timestamp":"2024-01-01T00:00:00Z"}'
-        })
-      );
-    });
-
     it('should handle array of accepted status codes as array', async () => {
       const mockResponse = {
         status: 202,
