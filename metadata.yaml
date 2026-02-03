@@ -8,7 +8,7 @@ inputs:
     description: HTTP method (GET, POST, PUT, DELETE, PATCH, etc.)
     required: true
     validation:
-      pattern: '^(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)$'
+      enum: ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]
 
   address:
     type: text
