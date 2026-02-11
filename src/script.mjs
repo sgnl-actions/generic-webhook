@@ -5,7 +5,7 @@
  * Supports all standard HTTP methods and custom headers/body.
  */
 
-import { getAuthorizationHeader, getBaseURL} from '@sgnl-actions/utils';
+import { getAuthorizationHeader, getBaseURL, SGNL_USER_AGENT} from '@sgnl-actions/utils';
 
 /**
  * Helper function to make HTTP request
@@ -138,6 +138,11 @@ export default {
           throw error;
         }
       }
+    }
+
+    // Add User-Agent if not already set in custom headers
+    if (!headers['User-Agent'] && !headers['user-agent']) {
+      headers['User-Agent'] = SGNL_USER_AGENT;
     }
 
     // Parse request body if provided
