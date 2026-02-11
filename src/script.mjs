@@ -5,7 +5,7 @@
  * Supports all standard HTTP methods and custom headers/body.
  */
 
-import { getAuthorizationHeader, getBaseURL} from '@sgnl-actions/utils';
+import { getAuthorizationHeader, getBaseURL } from '@sgnl-actions/utils';
 
 /**
  * Helper function to make HTTP request
