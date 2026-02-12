@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals';
 import script from '../src/script.mjs';
+import { SGNL_USER_AGENT } from '@sgnl-actions/utils';     
 
 // Mock fetch globally
 global.fetch = jest.fn();
@@ -40,7 +41,9 @@ describe('Generic Webhook Action', () => {
         'https://api.example.com/endpoint',
         {
           method: 'GET',
-          headers: {}
+          headers: {
+            "User-Agent": SGNL_USER_AGENT,
+          }
         }
       );
     });
@@ -79,7 +82,8 @@ describe('Generic Webhook Action', () => {
           headers: {
             'X-Custom-Header': 'value',
             'Authorization': 'Bearer secret-token',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'User-Agent': SGNL_USER_AGENT
           },
           body: '{"name":"John Doe"}'
         }
@@ -657,6 +661,33 @@ describe('Generic Webhook Action', () => {
       const result = await script.error(params, context);
 
       expect(result).toEqual({ status: 'retry_requested' });
+    });
+
+    it('should not override user-provided User-Agent header', async () => {
+      const mockResponse = {
+        status: 200,
+        text: jest.fn().mockResolvedValue('OK')
+      };
+      global.fetch.mockResolvedValue(mockResponse);
+
+      const params = {
+        method: 'GET',
+        address: 'https://api.example.com',
+        requestHeaders: '{"User-Agent":"CustomAgent/1.0"}'
+      };
+
+      const context = {};
+
+      await script.invoke(params, context);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://api.example.com',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'User-Agent': 'CustomAgent/1.0'
+          })
+        })
+      );
     });
   });
 
