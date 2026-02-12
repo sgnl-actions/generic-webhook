@@ -141,7 +141,7 @@ export default {
     }
 
     // Add User-Agent if not already set in custom headers
-    if (!headers['User-Agent'] && !headers['user-agent']) {
+    if (!headers['User-Agent']) {
       headers['User-Agent'] = SGNL_USER_AGENT;
     }
 
