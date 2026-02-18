@@ -11,7 +11,7 @@ const mockContext = {
     ADDRESS: 'https://test.example.api'
   },
   secrets: {
-    BEARER_AUTH_TOKEN: 'dev-test-key-123456',
+    BEARER_AUTH_TOKEN: 'dev-test-key-123456'
   },
   outputs: {},
   partial_results: {},
@@ -20,18 +20,18 @@ const mockContext = {
 
 const mockParams = {
   method: 'POST',
-  requestBody: '{"text":"User {$.user.profile__email} signed in"}',
+  requestBody: '{"text":"User {$.user.profile__email} signed in"}'
   // requestHeaders: ...,
   // address: '...'
 };
 
 async function runDev() {
   console.log('🚀 Running job script in development mode...\n');
-  
+
   console.log('📋 Parameters:', JSON.stringify(mockParams, null, 2));
   console.log('🔧 Context:', JSON.stringify(mockContext, null, 2));
   console.log('\n' + '='.repeat(50) + '\n');
-  
+
   try {
     const result = await script.invoke(mockParams, mockContext);
     console.log('\n' + '='.repeat(50));
@@ -40,11 +40,11 @@ async function runDev() {
   } catch (error) {
     console.log('\n' + '='.repeat(50));
     console.error('❌ Job failed:', error.message);
-    
+
     if (script.error) {
       console.log('\n🔄 Attempting error recovery...');
       try {
-        const recovery = await script.error({...mockParams, error}, mockContext);
+        const recovery = await script.error({ ...mockParams, error }, mockContext);
         console.log('✅ Recovery successful!');
         console.log('📤 Recovery result:', JSON.stringify(recovery, null, 2));
       } catch (recoveryError) {
