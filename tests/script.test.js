@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import script from '../src/script.mjs';
-import { SGNL_USER_AGENT } from '@sgnl-actions/utils';     
+import { SGNL_USER_AGENT } from '@sgnl-actions/utils';
 
 // Mock fetch globally
 global.fetch = jest.fn();
@@ -42,7 +42,7 @@ describe('Generic Webhook Action', () => {
         {
           method: 'GET',
           headers: {
-            "User-Agent": SGNL_USER_AGENT,
+            'User-Agent': SGNL_USER_AGENT
           }
         }
       );
