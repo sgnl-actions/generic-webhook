@@ -181,6 +181,9 @@ export default {
       );
     }
 
+    // Add execution timestamp
+    result.executedAt = new Date().toISOString();
+
     // Return successful response with the result
     return {
       status: 'success',

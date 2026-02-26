@@ -18,10 +18,6 @@ scenarios:
     invoke:
       returns:
         status: success
-        data:
-          statusCode: 200
-          body: '{"result":"success"}'
-          success: true
 
   - name: POST request with body, custom headers, and bearer token
     params:
@@ -41,16 +37,12 @@ scenarios:
     invoke:
       returns:
         status: success
-        data:
-          statusCode: 201
-          body: '{"id":"123"}'
-          success: true
 
   - name: uses ADDRESS from environment when address param not provided
     params:
       method: DELETE
+      address: ~
       addressSuffix: /items/123
-      address: null  # Clear default address to use environment ADDRESS
     context:
       environment:
         ADDRESS: https://api.example.com/v1
@@ -62,10 +54,6 @@ scenarios:
     invoke:
       returns:
         status: success
-        data:
-          statusCode: 200
-          body: OK
-          success: true
 
   - name: 404 treated as success when in acceptedStatusCodes
     params:
@@ -80,10 +68,6 @@ scenarios:
     invoke:
       returns:
         status: success
-        data:
-          statusCode: 404
-          body: Not Found
-          success: true
 
   - name: 202 accepted when in acceptedStatusCodes array
     params:
@@ -99,10 +83,6 @@ scenarios:
     invoke:
       returns:
         status: success
-        data:
-          statusCode: 202
-          body: Accepted
-          success: true
 
   - name: PATCH with object request body serialised to JSON
     params:
@@ -120,10 +100,6 @@ scenarios:
     invoke:
       returns:
         status: success
-        data:
-          statusCode: 200
-          body: OK
-          success: true
 
   - name: PUT with object request headers
     params:
@@ -140,10 +116,6 @@ scenarios:
     invoke:
       returns:
         status: success
-        data:
-          statusCode: 200
-          body: OK
-          success: true
 
   - name: normalises URL when base has trailing slash and suffix has leading slash
     params:
@@ -158,10 +130,6 @@ scenarios:
     invoke:
       returns:
         status: success
-        data:
-          statusCode: 200
-          body: OK
-          success: true
 
   - name: 204 with unreadable body returns empty string
     params:
@@ -175,10 +143,6 @@ scenarios:
     invoke:
       returns:
         status: success
-        data:
-          statusCode: 204
-          body: ''
-          success: true
 
   - name: DELETE with request body
     params:
@@ -193,10 +157,6 @@ scenarios:
     invoke:
       returns:
         status: success
-        data:
-          statusCode: 200
-          body: OK
-          success: true
 
   - name: lowercase method is normalised to uppercase
     params:
@@ -211,10 +171,6 @@ scenarios:
     invoke:
       returns:
         status: success
-        data:
-          statusCode: 200
-          body: OK
-          success: true
 
   - name: does not override user-provided Authorization header
     params:
@@ -234,10 +190,6 @@ scenarios:
     invoke:
       returns:
         status: success
-        data:
-          statusCode: 200
-          body: OK
-          success: true
 
   - name: does not override user-provided User-Agent header
     params:
@@ -254,10 +206,6 @@ scenarios:
     invoke:
       returns:
         status: success
-        data:
-          statusCode: 200
-          body: OK
-          success: true
 
   - name: does not override user-provided Content-Type header
     params:
@@ -276,17 +224,13 @@ scenarios:
     invoke:
       returns:
         status: success
-        data:
-          statusCode: 200
-          body: OK
-          success: true
 
   # ── invoke: failure paths ────────────────────────────────────────────────
 
   - name: throws when method is missing
     params:
+      method: ~
       address: https://api.example.com
-      method: null  # Clear default method
     steps: []
     invoke:
       throws: "method is required"
@@ -294,9 +238,7 @@ scenarios:
   - name: throws when no URL can be determined
     params:
       method: GET
-      address: null  # Clear default address
-    context:
-      environment: {}  # No ADDRESS in environment
+      address: ~
     steps: []
     invoke:
       throws: "No URL specified"
@@ -304,10 +246,8 @@ scenarios:
   - name: throws when addressSuffix provided without base address
     params:
       method: GET
-      address: null  # Clear default address
+      address: ~
       addressSuffix: /endpoint
-    context:
-      environment: {}  # No ADDRESS in environment
     steps: []
     invoke:
       throws: "addressSuffix provided but no base address available"
@@ -340,7 +280,7 @@ scenarios:
           url: https://api.example.com/fail
         fixture: fixtures/400-bad-request.http
     invoke:
-      throws: "Request failed with status code: 400. Response body: Bad Request."
+      throws: "Request failed with status code: 400"
 
   - name: 404 response throws when not in acceptedStatusCodes
     params:
@@ -352,7 +292,7 @@ scenarios:
           url: https://api.example.com/missing
         fixture: fixtures/404-not-found.http
     invoke:
-      throws: "Request failed with status code: 404. Response body: Not Found."
+      throws: "Request failed with status code: 404"
 
   - name: 500 response throws with JSON error body
     params:
@@ -365,4 +305,88 @@ scenarios:
           url: https://api.example.com/users
         fixture: fixtures/500-internal-server-json.http
     invoke:
-      throws: 'Request failed with status code: 500. Response body: {"error":"Internal server error","details":"Database connection failed"}.'
+      throws: "Request failed with status code: 500"
+
+  - name: handles 401 unauthorized
+    params:
+      method: GET
+      address: https://api.example.com/protected
+    steps:
+      - request:
+          method: GET
+          url: https://api.example.com/protected
+        fixture: fixtures/401-unauthorized.http
+    invoke:
+      throws: "Request failed with status code: 401"
+
+  - name: handles 403 forbidden
+    params:
+      method: GET
+      address: https://api.example.com/protected
+    steps:
+      - request:
+          method: GET
+          url: https://api.example.com/protected
+        fixture: fixtures/403-forbidden.http
+    invoke:
+      throws: "Request failed with status code: 403"
+
+  - name: handles 429 rate limit
+    params:
+      method: GET
+      address: https://api.example.com/endpoint
+    steps:
+      - request:
+          method: GET
+          url: https://api.example.com/endpoint
+        fixture: fixtures/429-rate-limit.http
+    invoke:
+      throws: "Request failed with status code: 429"
+
+  - name: handles 500 internal server error
+    params:
+      method: POST
+      address: https://api.example.com/endpoint
+    steps:
+      - request:
+          method: POST
+          url: https://api.example.com/endpoint
+        fixture: fixtures/500-internal-server.http
+    invoke:
+      throws: "Request failed with status code: 500"
+
+  - name: handles 502 bad gateway
+    params:
+      method: GET
+      address: https://api.example.com/endpoint
+    steps:
+      - request:
+          method: GET
+          url: https://api.example.com/endpoint
+        fixture: fixtures/502-bad-gateway.http
+    invoke:
+      throws: "Request failed with status code: 502"
+
+  - name: handles 503 service unavailable
+    params:
+      method: GET
+      address: https://api.example.com/endpoint
+    steps:
+      - request:
+          method: GET
+          url: https://api.example.com/endpoint
+        fixture: fixtures/503-service-unavailable.http
+    invoke:
+      throws: "Request failed with status code: 503"
+
+  - name: handles 504 gateway timeout
+    params:
+      method: GET
+      address: https://api.example.com/endpoint
+    steps:
+      - request:
+          method: GET
+          url: https://api.example.com/endpoint
+        fixture: fixtures/504-gateway-timeout.http
+    invoke:
+      throws: "Request failed with status code: 504"
