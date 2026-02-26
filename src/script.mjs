@@ -5,7 +5,7 @@
  * Supports all standard HTTP methods and custom headers/body.
  */
 
-import { getAuthorizationHeader, getBaseURL, SGNL_USER_AGENT} from '@sgnl-actions/utils';
+import { getAuthorizationHeader, getBaseURL, SGNL_USER_AGENT } from '@sgnl-actions/utils';
 
 /**
  * Helper function to make HTTP request
@@ -180,9 +180,6 @@ export default {
         `Request failed with status code: ${result.statusCode}. Response body: ${result.body}.`
       );
     }
-
-    // Add execution timestamp
-    result.executedAt = new Date().toISOString();
 
     // Return successful response with the result
     return {
