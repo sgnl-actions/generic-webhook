@@ -42,6 +42,7 @@ describe('Generic Webhook Action', () => {
         {
           method: 'GET',
           headers: {
+            'Authorization': '',
             'User-Agent': SGNL_USER_AGENT
           }
         }
