@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/sgnl-actions/schemas/main/metadata.schema.json
 name: generic-webhook
 description: Generic webhook action for making custom HTTP requests
 
@@ -48,18 +49,10 @@ inputs:
 
 # Expected output structure
 outputs:
-  statusCode:
-    type: number
-    description: HTTP status code from the response
-
-  body:
+  status:
     type: text
-    description: Response body content
+    description: Operation result status
 
-  success:
-    type: boolean
-    description: Whether the request was successful
-
-  executedAt:
-    type: datetime
-    description: When the request was executed (ISO 8601)
+  data:
+    type: object
+    description: Response data containing statusCode, body, success, and executedAt

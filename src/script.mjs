@@ -39,8 +39,7 @@ async function makeWebhookRequest(method, url, headers, body, acceptedStatusCode
   try {
     responseBody = await response.text();
   } catch {
-    // If we can't read the body, that's okay
-    responseBody = '';
+    // If we can't read the body, that's okay - responseBody stays as empty string
   }
 
   // Determine if request was successful
@@ -99,7 +98,7 @@ export default {
     } catch (error) {
       // If addressSuffix is provided but no base URL, give a more specific error
       if (params.addressSuffix) {
-        throw new Error('addressSuffix provided but no base address available. Provide either address parameter or ADDRESS environment variable');
+        throw new Error('addressSuffix provided but no base address available. Provide either address parameter or ADDRESS environment variable', { cause: error });
       }
       throw error;
     }
@@ -122,7 +121,7 @@ export default {
           headers = params.requestHeaders;
         }
       } catch (e) {
-        throw new Error(`Failed to parse requestHeaders: ${e.message}`);
+        throw new Error(`Failed to parse requestHeaders: ${e.message}`, { cause: e });
       }
     }
 
@@ -161,7 +160,7 @@ export default {
         try {
           acceptedStatusCodes = JSON.parse(params.acceptedStatusCodes);
         } catch (e) {
-          throw new Error(`Failed to parse acceptedStatusCodes: ${e.message}`);
+          throw new Error(`Failed to parse acceptedStatusCodes: ${e.message}`, { cause: e });
         }
       }
     }
