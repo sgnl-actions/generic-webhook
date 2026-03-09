@@ -1,0 +1,4 @@
+HTTP/1.1 504 Gateway Timeout
+Content-Type: application/json
+
+{"error":"Gateway Timeout","message":"Upstream server timed out"}

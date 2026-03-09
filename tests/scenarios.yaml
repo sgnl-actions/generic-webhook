@@ -1,0 +1,392 @@
+# Generic Webhook Action Test Scenarios
+action:
+  params:
+    method: GET
+    address: https://api.example.com/endpoint
+  context: {}
+
+scenarios:
+
+  # ── invoke: success paths ────────────────────────────────────────────────
+
+  - name: GET request returns success with JSON body
+    steps:
+      - request:
+          method: GET
+          url: https://api.example.com/endpoint
+        fixture: fixtures/200-ok-json.http
+    invoke:
+      returns:
+        status: success
+
+  - name: POST request with body, custom headers, and bearer token
+    params:
+      method: POST
+      address: https://api.example.com
+      addressSuffix: users
+      requestBody: '{"name":"John Doe"}'
+      requestHeaders: '{"X-Custom-Header":"value"}'
+    context:
+      secrets:
+        BEARER_AUTH_TOKEN: secret-token
+    steps:
+      - request:
+          method: POST
+          url: https://api.example.com/users
+        fixture: fixtures/201-created.http
+    invoke:
+      returns:
+        status: success
+
+  - name: uses ADDRESS from environment when address param not provided
+    params:
+      method: DELETE
+      address: ~
+      addressSuffix: /items/123
+    context:
+      environment:
+        ADDRESS: https://api.example.com/v1
+    steps:
+      - request:
+          method: DELETE
+          url: https://api.example.com/v1/items/123
+        fixture: fixtures/200-ok-plain.http
+    invoke:
+      returns:
+        status: success
+
+  - name: 404 treated as success when in acceptedStatusCodes
+    params:
+      method: GET
+      address: https://api.example.com/user/999
+      acceptedStatusCodes: [404, 410]
+    steps:
+      - request:
+          method: GET
+          url: https://api.example.com/user/999
+        fixture: fixtures/404-not-found.http
+    invoke:
+      returns:
+        status: success
+
+  - name: 202 accepted when in acceptedStatusCodes array
+    params:
+      method: POST
+      address: https://api.example.com/async
+      requestBody: '{"task":"run"}'
+      acceptedStatusCodes: [200, 201, 202, 204]
+    steps:
+      - request:
+          method: POST
+          url: https://api.example.com/async
+        fixture: fixtures/202-accepted.http
+    invoke:
+      returns:
+        status: success
+
+  - name: PATCH with object request body serialised to JSON
+    params:
+      method: PATCH
+      address: https://api.example.com/update
+      requestBody:
+        key: value
+        nested:
+          data: true
+    steps:
+      - request:
+          method: PATCH
+          url: https://api.example.com/update
+        fixture: fixtures/200-ok-plain.http
+    invoke:
+      returns:
+        status: success
+
+  - name: PUT with object request headers
+    params:
+      method: PUT
+      address: https://api.example.com/resource
+      requestHeaders:
+        X-API-Key: key123
+        X-Request-ID: req456
+    steps:
+      - request:
+          method: PUT
+          url: https://api.example.com/resource
+        fixture: fixtures/200-ok-plain.http
+    invoke:
+      returns:
+        status: success
+
+  - name: normalises URL when base has trailing slash and suffix has leading slash
+    params:
+      method: GET
+      address: https://api.example.com/
+      addressSuffix: /endpoint
+    steps:
+      - request:
+          method: GET
+          url: https://api.example.com/endpoint
+        fixture: fixtures/200-ok-plain.http
+    invoke:
+      returns:
+        status: success
+
+  - name: 204 with unreadable body returns empty string
+    params:
+      method: DELETE
+      address: https://api.example.com/resource
+    steps:
+      - request:
+          method: DELETE
+          url: https://api.example.com/resource
+        fixture: fixtures/204-no-content.http
+    invoke:
+      returns:
+        status: success
+
+  - name: DELETE with request body
+    params:
+      method: DELETE
+      address: https://api.example.com/bulk-delete
+      requestBody: '{"ids":[1,2,3]}'
+    steps:
+      - request:
+          method: DELETE
+          url: https://api.example.com/bulk-delete
+        fixture: fixtures/200-ok-plain.http
+    invoke:
+      returns:
+        status: success
+
+  - name: lowercase method is normalised to uppercase
+    params:
+      method: post
+      address: https://api.example.com/endpoint
+      requestBody: '{"test":"data"}'
+    steps:
+      - request:
+          method: POST
+          url: https://api.example.com/endpoint
+        fixture: fixtures/200-ok-plain.http
+    invoke:
+      returns:
+        status: success
+
+  - name: does not override user-provided Authorization header
+    params:
+      method: GET
+      address: https://api.example.com
+      requestHeaders: '{"Authorization":"Custom auth"}'
+    context:
+      secrets:
+        AUTH_TOKEN: should-not-be-used
+    steps:
+      - request:
+          method: GET
+          url: https://api.example.com
+          headers:
+            Authorization: Custom auth
+        fixture: fixtures/200-ok-plain.http
+    invoke:
+      returns:
+        status: success
+
+  - name: does not override user-provided User-Agent header
+    params:
+      method: GET
+      address: https://api.example.com
+      requestHeaders: '{"User-Agent":"CustomAgent/1.0"}'
+    steps:
+      - request:
+          method: GET
+          url: https://api.example.com
+          headers:
+            User-Agent: CustomAgent/1.0
+        fixture: fixtures/200-ok-plain.http
+    invoke:
+      returns:
+        status: success
+
+  - name: does not override user-provided Content-Type header
+    params:
+      method: POST
+      address: https://api.example.com/endpoint
+      requestBody: plain text data
+      requestHeaders:
+        Content-Type: text/plain
+    steps:
+      - request:
+          method: POST
+          url: https://api.example.com/endpoint
+          headers:
+            Content-Type: text/plain
+        fixture: fixtures/200-ok-plain.http
+    invoke:
+      returns:
+        status: success
+
+  # ── invoke: failure paths ────────────────────────────────────────────────
+
+  - name: throws when method is missing
+    params:
+      method: ~
+      address: https://api.example.com
+    steps: []
+    invoke:
+      throws: "method is required"
+
+  - name: throws when no URL can be determined
+    params:
+      method: GET
+      address: ~
+    steps: []
+    invoke:
+      throws: "No URL specified"
+
+  - name: throws when addressSuffix provided without base address
+    params:
+      method: GET
+      address: ~
+      addressSuffix: /endpoint
+    steps: []
+    invoke:
+      throws: "addressSuffix provided but no base address available"
+
+  - name: throws for invalid JSON request headers
+    params:
+      method: GET
+      address: https://api.example.com
+      requestHeaders: invalid json
+    steps: []
+    invoke:
+      throws: "Failed to parse requestHeaders"
+
+  - name: throws for invalid JSON acceptedStatusCodes
+    params:
+      method: GET
+      address: https://api.example.com
+      acceptedStatusCodes: invalid json
+    steps: []
+    invoke:
+      throws: "Failed to parse acceptedStatusCodes"
+
+  - name: 400 response throws when not in acceptedStatusCodes
+    params:
+      method: POST
+      address: https://api.example.com/fail
+    steps:
+      - request:
+          method: POST
+          url: https://api.example.com/fail
+        fixture: fixtures/400-bad-request.http
+    invoke:
+      throws: "Request failed with status code: 400"
+
+  - name: 404 response throws when not in acceptedStatusCodes
+    params:
+      method: GET
+      address: https://api.example.com/missing
+    steps:
+      - request:
+          method: GET
+          url: https://api.example.com/missing
+        fixture: fixtures/404-not-found.http
+    invoke:
+      throws: "Request failed with status code: 404"
+
+  - name: 500 response throws with JSON error body
+    params:
+      method: POST
+      address: https://api.example.com/users
+      requestBody: '{"name":"test"}'
+    steps:
+      - request:
+          method: POST
+          url: https://api.example.com/users
+        fixture: fixtures/500-internal-server-json.http
+    invoke:
+      throws: "Request failed with status code: 500"
+
+  - name: handles 401 unauthorized
+    params:
+      method: GET
+      address: https://api.example.com/protected
+    steps:
+      - request:
+          method: GET
+          url: https://api.example.com/protected
+        fixture: fixtures/401-unauthorized.http
+    invoke:
+      throws: "Request failed with status code: 401"
+
+  - name: handles 403 forbidden
+    params:
+      method: GET
+      address: https://api.example.com/protected
+    steps:
+      - request:
+          method: GET
+          url: https://api.example.com/protected
+        fixture: fixtures/403-forbidden.http
+    invoke:
+      throws: "Request failed with status code: 403"
+
+  - name: handles 429 rate limit
+    params:
+      method: GET
+      address: https://api.example.com/endpoint
+    steps:
+      - request:
+          method: GET
+          url: https://api.example.com/endpoint
+        fixture: fixtures/429-rate-limit.http
+    invoke:
+      throws: "Request failed with status code: 429"
+
+  - name: handles 500 internal server error
+    params:
+      method: POST
+      address: https://api.example.com/endpoint
+    steps:
+      - request:
+          method: POST
+          url: https://api.example.com/endpoint
+        fixture: fixtures/500-internal-server.http
+    invoke:
+      throws: "Request failed with status code: 500"
+
+  - name: handles 502 bad gateway
+    params:
+      method: GET
+      address: https://api.example.com/endpoint
+    steps:
+      - request:
+          method: GET
+          url: https://api.example.com/endpoint
+        fixture: fixtures/502-bad-gateway.http
+    invoke:
+      throws: "Request failed with status code: 502"
+
+  - name: handles 503 service unavailable
+    params:
+      method: GET
+      address: https://api.example.com/endpoint
+    steps:
+      - request:
+          method: GET
+          url: https://api.example.com/endpoint
+        fixture: fixtures/503-service-unavailable.http
+    invoke:
+      throws: "Request failed with status code: 503"
+
+  - name: handles 504 gateway timeout
+    params:
+      method: GET
+      address: https://api.example.com/endpoint
+    steps:
+      - request:
+          method: GET
+          url: https://api.example.com/endpoint
+        fixture: fixtures/504-gateway-timeout.http
+    invoke:
+      throws: "Request failed with status code: 504"

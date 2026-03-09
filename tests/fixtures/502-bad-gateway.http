@@ -1,0 +1,4 @@
+HTTP/1.1 502 Bad Gateway
+Content-Type: application/json
+
+{"error":"Bad Gateway","message":"Upstream server returned an invalid response"}
