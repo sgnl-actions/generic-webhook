@@ -183,6 +183,13 @@ export default {
     // Add execution timestamp
     result.executedAt = new Date().toISOString();
 
+    // Parse body as JSON if possible otherwise leave as string.
+    try {
+      result.body = JSON.parse(result.body);
+    } catch {
+      // Leave as original string.
+    }
+
     // Return successful response with the result
     return {
       status: 'success',
