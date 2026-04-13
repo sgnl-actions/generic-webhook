@@ -84,6 +84,8 @@ export default {
    * @returns {Promise<Object>} Action result
    */
   invoke: async (params, context) => {
+    // TODO: REMOVE - temporary sleep for testing Go context timeout + respawn
+    await new Promise(resolve => setTimeout(resolve, 60000));
 
     // Validate required parameters
     if (!params.method) {
