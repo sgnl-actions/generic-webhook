@@ -5,6 +5,7 @@
  * Supports all standard HTTP methods and custom headers/body.
  */
 
+import axios from 'axios';
 import { getAuthorizationHeader, getBaseURL, SGNL_USER_AGENT } from '@sgnl-actions/utils';
 
 /**
@@ -38,6 +39,55 @@ async function makeWebhookRequest(method, url, headers, body, acceptedStatusCode
   let responseBody = '';
   try {
     responseBody = await response.text();
+  } catch {
+    // If we can't read the body, that's okay - responseBody stays as empty string
+  }
+
+  // Determine if request was successful
+  // Success = 2xx status OR status is in acceptedStatusCodes array
+  const isSuccess = (response.status >= 200 && response.status < 300) ||
+                    (acceptedStatusCodes && acceptedStatusCodes.includes(response.status));
+
+  return {
+    statusCode: response.status,
+    body: responseBody,
+    success: isSuccess
+  };
+}
+
+/**
+ * Helper function to make HTTP request using axios
+ * @param {string} method - HTTP method
+ * @param {string} url - Full URL to send request to
+ * @param {Object} headers - Headers to include
+ * @param {string} body - Request body (for methods that support it)
+ * @param {number[]} acceptedStatusCodes - Additional status codes to treat as success
+ * @returns {Promise<Object>} Response object with statusCode, body, and success flag
+ */
+async function makeWebhookRequestAxios(method, url, headers, body, acceptedStatusCodes = []) {
+  const config = {
+    method: method.toUpperCase(),
+    url,
+    headers: headers || {},
+    validateStatus: () => true // Don't throw on any status code
+  };
+
+  // Only add body for methods that support it
+  const methodsWithBody = ['POST', 'PUT', 'PATCH', 'DELETE'];
+  if (methodsWithBody.includes(config.method) && body) {
+    config.data = body;
+    // Set Content-Type if not already set and we have a body
+    if (!config.headers['Content-Type'] && !config.headers['content-type']) {
+      config.headers['Content-Type'] = 'application/json';
+    }
+  }
+
+  const response = await axios(config);
+
+  // Read response body
+  let responseBody = '';
+  try {
+    responseBody = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
   } catch {
     // If we can't read the body, that's okay - responseBody stays as empty string
   }
@@ -169,6 +219,15 @@ export default {
 
     // Make the HTTP request
     const result = await makeWebhookRequest(
+      params.method,
+      url,
+      headers,
+      body,
+      acceptedStatusCodes
+    );
+
+    // Make the same HTTP request using axios
+    const axiosResult = await makeWebhookRequestAxios(
       params.method,
       url,
       headers,
