@@ -1,4 +1,50 @@
-import { createConfig } from '@sgnl-actions/rollup-config';
+import { nodeResolve } from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
+import terser from '@rollup/plugin-terser';
 import json from '@rollup/plugin-json';
+import { builtinModules } from 'module';
 
-export default createConfig({ plugins: [json()] });
+const banner = `/**
+ * @license MIT
+ * Copyright (c) 2025 SGNL.ai, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */`;
+
+// Map bare builtin names to node: prefixed versions
+const builtinPaths = Object.fromEntries(
+  builtinModules.map(mod => [mod, `node:${mod}`])
+);
+
+export default {
+  input: 'src/script.mjs',
+  output: {
+    file: 'dist/index.js',
+    format: 'cjs',
+    banner,
+    paths: builtinPaths
+  },
+  plugins: [
+    nodeResolve({ preferBuiltins: true }),
+    commonjs(),
+    json(),
+    terser({ format: { comments: /(@license|@preserve|^!)/ } })
+  ],
+  external: builtinModules
+};
