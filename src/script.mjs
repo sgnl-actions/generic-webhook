@@ -5,8 +5,12 @@
  * Supports all standard HTTP methods and custom headers/body.
  */
 
-import axios from 'axios';
-import { getAuthorizationHeader, getBaseURL, SGNL_USER_AGENT } from '@sgnl-actions/utils';
+import axios from "axios";
+import {
+  getAuthorizationHeader,
+  getBaseURL,
+  SGNL_USER_AGENT,
+} from "@sgnl-actions/utils";
 
 /**
  * Helper function to make HTTP request
@@ -17,26 +21,32 @@ import { getAuthorizationHeader, getBaseURL, SGNL_USER_AGENT } from '@sgnl-actio
  * @param {number[]} acceptedStatusCodes - Additional status codes to treat as success
  * @returns {Promise<Object>} Response object with statusCode, body, and success flag
  */
-async function makeWebhookRequest(method, url, headers, body, acceptedStatusCodes = []) {
+async function makeWebhookRequest(
+  method,
+  url,
+  headers,
+  body,
+  acceptedStatusCodes = [],
+) {
   const options = {
     method: method.toUpperCase(),
-    headers: headers || {}
+    headers: headers || {},
   };
 
   // Only add body for methods that support it
-  const methodsWithBody = ['POST', 'PUT', 'PATCH', 'DELETE'];
+  const methodsWithBody = ["POST", "PUT", "PATCH", "DELETE"];
   if (methodsWithBody.includes(options.method) && body) {
     options.body = body;
     // Set Content-Type if not already set and we have a body
-    if (!options.headers['Content-Type'] && !options.headers['content-type']) {
-      options.headers['Content-Type'] = 'application/json';
+    if (!options.headers["Content-Type"] && !options.headers["content-type"]) {
+      options.headers["Content-Type"] = "application/json";
     }
   }
 
   const response = await fetch(url, options);
 
   // Read response body
-  let responseBody = '';
+  let responseBody = "";
   try {
     responseBody = await response.text();
   } catch {
@@ -45,13 +55,14 @@ async function makeWebhookRequest(method, url, headers, body, acceptedStatusCode
 
   // Determine if request was successful
   // Success = 2xx status OR status is in acceptedStatusCodes array
-  const isSuccess = (response.status >= 200 && response.status < 300) ||
-                    (acceptedStatusCodes && acceptedStatusCodes.includes(response.status));
+  const isSuccess =
+    (response.status >= 200 && response.status < 300) ||
+    (acceptedStatusCodes && acceptedStatusCodes.includes(response.status));
 
   return {
     statusCode: response.status,
     body: responseBody,
-    success: isSuccess
+    success: isSuccess,
   };
 }
 
@@ -64,43 +75,53 @@ async function makeWebhookRequest(method, url, headers, body, acceptedStatusCode
  * @param {number[]} acceptedStatusCodes - Additional status codes to treat as success
  * @returns {Promise<Object>} Response object with statusCode, body, and success flag
  */
-async function makeWebhookRequestAxios(method, url, headers, body, acceptedStatusCodes = []) {
+async function makeWebhookRequestAxios(
+  method,
+  url,
+  headers,
+  body,
+  acceptedStatusCodes = [],
+) {
   const config = {
     method: method.toUpperCase(),
     url,
     headers: headers || {},
-    validateStatus: () => true // Don't throw on any status code
+    validateStatus: () => true, // Don't throw on any status code
   };
 
   // Only add body for methods that support it
-  const methodsWithBody = ['POST', 'PUT', 'PATCH', 'DELETE'];
+  const methodsWithBody = ["POST", "PUT", "PATCH", "DELETE"];
   if (methodsWithBody.includes(config.method) && body) {
     config.data = body;
     // Set Content-Type if not already set and we have a body
-    if (!config.headers['Content-Type'] && !config.headers['content-type']) {
-      config.headers['Content-Type'] = 'application/json';
+    if (!config.headers["Content-Type"] && !config.headers["content-type"]) {
+      config.headers["Content-Type"] = "application/json";
     }
   }
 
   const response = await axios(config);
 
   // Read response body
-  let responseBody = '';
+  let responseBody = "";
   try {
-    responseBody = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+    responseBody =
+      typeof response.data === "string"
+        ? response.data
+        : JSON.stringify(response.data);
   } catch {
     // If we can't read the body, that's okay - responseBody stays as empty string
   }
 
   // Determine if request was successful
   // Success = 2xx status OR status is in acceptedStatusCodes array
-  const isSuccess = (response.status >= 200 && response.status < 300) ||
-                    (acceptedStatusCodes && acceptedStatusCodes.includes(response.status));
+  const isSuccess =
+    (response.status >= 200 && response.status < 300) ||
+    (acceptedStatusCodes && acceptedStatusCodes.includes(response.status));
 
   return {
     statusCode: response.status,
     body: responseBody,
-    success: isSuccess
+    success: isSuccess,
   };
 }
 
@@ -135,11 +156,11 @@ export default {
    */
   invoke: async (params, context) => {
     // TODO: REMOVE - temporary sleep for testing Go context timeout + respawn
-    await new Promise(resolve => setTimeout(resolve, 20000));
+    // await new Promise(resolve => setTimeout(resolve, 20000));
 
     // Validate required parameters
     if (!params.method) {
-      throw new Error('method is required');
+      throw new Error("method is required");
     }
 
     // Build the URL using utility function
@@ -150,7 +171,10 @@ export default {
     } catch (error) {
       // If addressSuffix is provided but no base URL, give a more specific error
       if (params.addressSuffix) {
-        throw new Error('addressSuffix provided but no base address available. Provide either address parameter or ADDRESS environment variable', { cause: error });
+        throw new Error(
+          "addressSuffix provided but no base address available. Provide either address parameter or ADDRESS environment variable",
+          { cause: error },
+        );
       }
       throw error;
     }
@@ -159,7 +183,9 @@ export default {
     if (params.addressSuffix) {
       // getBaseUrl already removed trailing slash from base URL
       // Add leading slash to suffix if it doesn't have one
-      const suffix = params.addressSuffix.startsWith('/') ? params.addressSuffix : '/' + params.addressSuffix;
+      const suffix = params.addressSuffix.startsWith("/")
+        ? params.addressSuffix
+        : "/" + params.addressSuffix;
       url = url + suffix;
     }
 
@@ -167,13 +193,15 @@ export default {
     let headers = {};
     if (params.requestHeaders) {
       try {
-        if (typeof params.requestHeaders === 'string') {
+        if (typeof params.requestHeaders === "string") {
           headers = JSON.parse(params.requestHeaders);
-        } else if (typeof params.requestHeaders === 'object') {
+        } else if (typeof params.requestHeaders === "object") {
           headers = params.requestHeaders;
         }
       } catch (e) {
-        throw new Error(`Failed to parse requestHeaders: ${e.message}`, { cause: e });
+        throw new Error(`Failed to parse requestHeaders: ${e.message}`, {
+          cause: e,
+        });
       }
     }
 
@@ -185,20 +213,20 @@ export default {
       } catch (error) {
         // If no auth is configured, that's okay for generic webhook - it's optional
         // Only throw if it's an error other than "no auth configured"
-        if (!error.message.includes('No authentication configured')) {
+        if (!error.message.includes("No authentication configured")) {
           throw error;
         }
       }
     }
 
     // Add User-Agent if not already set in custom headers
-    if (!headers['User-Agent']) {
-      headers['User-Agent'] = SGNL_USER_AGENT;
+    if (!headers["User-Agent"]) {
+      headers["User-Agent"] = SGNL_USER_AGENT;
     }
 
     // Parse request body if provided
     let body = params.requestBody;
-    if (body && typeof body === 'object') {
+    if (body && typeof body === "object") {
       // If body is already an object, stringify it
       body = JSON.stringify(body);
     }
@@ -208,11 +236,13 @@ export default {
     if (params.acceptedStatusCodes) {
       if (Array.isArray(params.acceptedStatusCodes)) {
         acceptedStatusCodes = params.acceptedStatusCodes;
-      } else if (typeof params.acceptedStatusCodes === 'string') {
+      } else if (typeof params.acceptedStatusCodes === "string") {
         try {
           acceptedStatusCodes = JSON.parse(params.acceptedStatusCodes);
         } catch (e) {
-          throw new Error(`Failed to parse acceptedStatusCodes: ${e.message}`, { cause: e });
+          throw new Error(`Failed to parse acceptedStatusCodes: ${e.message}`, {
+            cause: e,
+          });
         }
       }
     }
@@ -223,7 +253,7 @@ export default {
       url,
       headers,
       body,
-      acceptedStatusCodes
+      acceptedStatusCodes,
     );
 
     // Make the same HTTP request using axios
@@ -232,12 +262,12 @@ export default {
       url,
       headers,
       body,
-      acceptedStatusCodes
+      acceptedStatusCodes,
     );
 
     if (!result.success) {
       throw new Error(
-        `Request failed with status code: ${result.statusCode}. Response body: ${result.body}.`
+        `Request failed with status code: ${result.statusCode}. Response body: ${result.body}.`,
       );
     }
 
@@ -253,8 +283,8 @@ export default {
 
     // Return successful response with the result
     return {
-      status: 'success',
-      data: result
+      status: "success",
+      data: result,
     };
   },
 
@@ -268,28 +298,30 @@ export default {
     const { error } = params;
 
     // Check if it's a network-related error (retryable)
-    if (error.message && (
-      error.message.includes('ECONNREFUSED') ||
-      error.message.includes('ETIMEDOUT') ||
-      error.message.includes('ENOTFOUND') ||
-      error.message.includes('fetch failed') ||
-      error.message.includes('network')
-    )) {
+    if (
+      error.message &&
+      (error.message.includes("ECONNREFUSED") ||
+        error.message.includes("ETIMEDOUT") ||
+        error.message.includes("ENOTFOUND") ||
+        error.message.includes("fetch failed") ||
+        error.message.includes("network"))
+    ) {
       // Network errors are retryable
-      return { status: 'retry_requested' };
+      return { status: "retry_requested" };
     }
 
     // Validation errors are fatal
-    if (error.message && (
-      error.message.includes('is required') ||
-      error.message.includes('Failed to parse') ||
-      error.message.includes('No URL specified')
-    )) {
+    if (
+      error.message &&
+      (error.message.includes("is required") ||
+        error.message.includes("Failed to parse") ||
+        error.message.includes("No URL specified"))
+    ) {
       throw error; // Re-throw to mark as fatal
     }
 
     // Default: let framework retry
-    return { status: 'retry_requested' };
+    return { status: "retry_requested" };
   },
 
   /**
@@ -300,6 +332,6 @@ export default {
    */
   halt: async (_params, _context) => {
     // No cleanup needed for webhook action
-    return { status: 'halted' };
-  }
+    return { status: "halted" };
+  },
 };
