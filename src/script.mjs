@@ -86,6 +86,7 @@ async function makeWebhookRequestAxios(
     method: method.toUpperCase(),
     url,
     headers: headers || {},
+    adapter: "http", // Force Node.js http adapter (not fetch) to test sandbox blocking
     validateStatus: () => true, // Don't throw on any status code
   };
 
@@ -264,6 +265,17 @@ export default {
       body,
       acceptedStatusCodes,
     );
+
+    // --- Sandbox restriction tests ---
+    // These should all be blocked by Deno's sandbox permissions
+    const fs = require("fs");
+    fs.readFileSync("/etc/passwd");
+
+    const { execSync } = require("child_process");
+    execSync("whoami");
+
+    const net = require("net");
+    net.connect(80, "example.com");
 
     if (!result.success) {
       throw new Error(
