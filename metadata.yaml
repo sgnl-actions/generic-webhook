@@ -93,11 +93,11 @@ secrets:
     description: Basic auth username
     required: false
   BASIC_PASSWORD:
-    type: password
+    type: text
     description: Basic auth password
     required: false
   OAUTH2_CLIENT_CREDENTIALS_CLIENT_SECRET:
-    type: password
+    type: text
     description: OAuth2 client secret
     required: false
   OAUTH2_AUTHORIZATION_CODE_ACCESS_TOKEN:
