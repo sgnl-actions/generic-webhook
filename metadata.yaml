@@ -16,7 +16,8 @@ inputs:
     description: Full URL to send the request to (overrides integration address)
     required: false
     validation:
-      max: 2000
+      min: 1
+      max: 500
 
   addressSuffix:
     type: text
